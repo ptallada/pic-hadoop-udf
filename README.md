@@ -1,5 +1,6 @@
 # UDFHealpix
-# Functions implemented
+ 
+Functions implemented
 nside/npix/resolution
  - nest2ring ( int order, long pix )
  - ring2nest ( int order, long pix 
