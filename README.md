@@ -4,7 +4,7 @@ Functions implemented
 
 nside/npix/resolution
  - nest2ring ( int order, long pix )
- - ring2nest ( int order, long pix 
+ - ring2nest ( int order, long pix )
  - nside2npix ( int nSide )
  - npix2nside ( long nPix )
  - nside2order ( int nSide )
