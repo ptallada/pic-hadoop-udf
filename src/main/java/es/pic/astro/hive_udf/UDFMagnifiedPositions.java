@@ -17,6 +17,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.commons.math3.analysis.function.Sinc;
 
 @Description(
     name="magnified_positions",
@@ -34,6 +35,8 @@ public class UDFMagnifiedPositions extends GenericUDF {
     private final DoubleWritable DecMagWritable = new DoubleWritable();
 
     private Converter[] converters = new Converter[4];
+
+    private final Sinc sinc = new Sinc();
 
     private static double clip(double val, double min, double max) {
         return Math.max(min, Math.min(max, val));
@@ -91,7 +94,7 @@ public class UDFMagnifiedPositions extends GenericUDF {
         double sth0 = Math.sqrt(1 - cth0 * cth0);
 
         double grad_len = Math.sqrt(defl_1 * defl_1 + defl_2 * defl_2);
-        double sinc_grad_len = Math.sin(grad_len)/grad_len;
+        double sinc_grad_len = sinc.value(grad_len);
 
         double cth = Math.cos(grad_len)*cth0 + sinc_grad_len*sth0*defl_1;
         double sth = Math.sqrt(1 - cth * cth);
