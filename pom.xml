@@ -7,7 +7,7 @@
   <groupId>es.pic.astro</groupId>
   <artifactId>hive-udf</artifactId>
   <packaging>jar</packaging>
-  <version>3.0.1-1</version>
+  <version>3.1.0-1</version>
   <name>hive-udf</name>
   <url>http://maven.apache.org</url>
 
@@ -40,7 +40,7 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-client</artifactId>
-      <version>3.1.1.3.0.2.0-50</version>
+      <version>3.1.1.3.0.2.3-6</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>healpix</groupId>
       <artifactId>healpix_nofits</artifactId>
-      <version>3.50</version>
+      <version>3.60</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

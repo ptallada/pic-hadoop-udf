@@ -34,83 +34,64 @@ import healpix.essentials.Vec3;
 )
 public class UDFNeighbours extends GenericUDF {
 
-    private final Object[] result = new Object[8];
-    private final LongWritable[] nWritable = new LongWritable[8];    
-
-    private Converter[] intconverter = new Converter[1];
-    private Converter[] longconverter = new Converter[1];
-    private Converter[] booleanconverter = new Converter[1];
+    private Converter intconverter;
+    private Converter longconverter;
+    private Converter booleanconverter;
     
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length < 2 || arguments.length > 3) {
             throw new UDFArgumentLengthException("neighbours() takes at least 2 arguments, not more than 3: order, pix, nest");
         }
-        List<String> fieldNames = new ArrayList<String>();
-        List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
-
         ObjectInspector intOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
         ObjectInspector longOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
         
-        intconverter[0] = (Converter) ObjectInspectorConverters.getConverter(arguments[0], intOI);
-        longconverter[0] = (Converter) ObjectInspectorConverters.getConverter(arguments[1], longOI);
+        intconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[0], intOI);
+        longconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[1], longOI);
         if (arguments.length == 3) {
             ObjectInspector boolOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-            booleanconverter[0] = (Converter) ObjectInspectorConverters.getConverter(arguments[2], boolOI);
+            booleanconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[2], boolOI);
         }
-        int i;        
-        for(i = 0; i < 8; i++) {
-           fieldNames.add("N"+i); 
-        }
-        for(i = 0; i < 8; i++) {
-            fieldOIs.add(PrimitiveObjectInspectorFactory.writableLongObjectInspector);
-        }
-        for(i = 0; i < 8; i++) {
-            result[i] = nWritable[i]; 
-        }
-        return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+        
+        return ObjectInspectorFactory.getStandardListObjectInspector(
+            PrimitiveObjectInspectorFactory.writableLongObjectInspector
+        );
     }
-
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
+    
         IntWritable argsw1 = new IntWritable();
         LongWritable argsw2 = new LongWritable();
         BooleanWritable argsw3 = new BooleanWritable(false);
-        argsw1 = (IntWritable) intconverter[0].convert(arguments[0].get());
-        argsw2 = (LongWritable) longconverter[0].convert(arguments[1].get());
-        int i;
+        argsw1 = (IntWritable) intconverter.convert(arguments[0].get());
+        argsw2 = (LongWritable) longconverter.convert(arguments[1].get());
         if (arguments.length == 3) {
-            argsw3 = (BooleanWritable) booleanconverter[0].convert(arguments[2].get());
+            argsw3 = (BooleanWritable) booleanconverter.convert(arguments[2].get());
         }
+        
         if (argsw1 == null || argsw2 == null){
-            for(i = 0; i < 8; i++){ result[i] = null;   }
-            return result;
+            return null;
         }
 
         int order = argsw1.get();
         long pix = argsw2.get();
         boolean nest = argsw3.get();
 
-        long[] res = new long[8];
-        for(i = 0; i < 8; i++)
-        {
-            nWritable[i] = new LongWritable();
-            res[i] = 0L;         
-        }
-
+        ArrayList<LongWritable> result = new ArrayList<LongWritable>();        
+        long[] res;
         try{
             if (nest == true) {
                 res = HealpixProc.neighboursNest(order, pix);
             } else {
                 res = HealpixProc.neighboursRing(order, pix);
-            }    
+            }
+            
+            for(int i = 0; i < 8; i++){ 
+                result.add(new LongWritable(res[i]));
+            }
         } catch (Exception e) {}
 
-        for(i = 0; i < 8; i++){ 
-            nWritable[i].set(res[i]);
-            result[i] = nWritable[i];
-        }
         return result;
     }
 
