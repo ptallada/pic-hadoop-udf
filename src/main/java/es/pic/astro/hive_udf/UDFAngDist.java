@@ -3,8 +3,6 @@ import java.lang.Math;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
-import healpix.essentials.HealpixProc;
-import healpix.essentials.Pointing;
 
 @Description(
     name="angdist",
