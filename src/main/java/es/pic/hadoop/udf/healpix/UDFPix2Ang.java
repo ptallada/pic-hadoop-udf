@@ -34,7 +34,6 @@ import healpix.essentials.Pointing;
 )
 // @formatter:on
 public class UDFPix2Ang extends GenericUDF {
-
     Converter orderConverter;
     Converter ipixConverter;
     Converter nestConverter;
@@ -49,8 +48,8 @@ public class UDFPix2Ang extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
             .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
 
-    ByteWritable orderArg = new ByteWritable();
-    LongWritable ipixArg = new LongWritable();
+    ByteWritable orderArg;
+    LongWritable ipixArg;
     BooleanWritable nestArg = new BooleanWritable();
     BooleanWritable lonlatArg = new BooleanWritable();
 

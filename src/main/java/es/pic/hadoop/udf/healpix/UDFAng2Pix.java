@@ -31,7 +31,6 @@ import healpix.essentials.Pointing;
 )
 // @formatter:on
 public class UDFAng2Pix extends GenericUDF {
-
     Converter orderConverter;
     Converter thetaConverter;
     Converter phiConverter;

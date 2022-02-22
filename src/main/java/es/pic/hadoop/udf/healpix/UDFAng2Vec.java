@@ -29,7 +29,6 @@ import org.apache.hadoop.io.DoubleWritable;
 )
 // @formatter:on
 public class UDFAng2Vec extends GenericUDF {
-
     Converter thetaConverter;
     Converter phiConverter;
     Converter lonlatConverter;

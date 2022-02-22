@@ -34,7 +34,6 @@ import healpix.essentials.Vec3;
 )
 // @formatter:on
 public class UDFPix2Vec extends GenericUDF {
-
     Converter orderConverter;
     Converter ipixConverter;
     Converter nestConverter;
@@ -48,8 +47,8 @@ public class UDFPix2Vec extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
             .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
 
-    ByteWritable orderArg = new ByteWritable();
-    LongWritable ipixArg = new LongWritable();
+    ByteWritable orderArg;
+    LongWritable ipixArg;
     BooleanWritable nestArg = new BooleanWritable();
 
     byte order;
