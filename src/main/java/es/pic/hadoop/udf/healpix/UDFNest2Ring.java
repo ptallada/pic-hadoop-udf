@@ -1,4 +1,4 @@
-package es.pic.astro.hive_udf;
+package es.pic.hadoop.udf.healpix;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -11,77 +11,72 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.LongWritable;
+
 import healpix.essentials.HealpixProc;
 
+// @formatter:off
 @Description(
-    name="nest2ring",
-    value="_FUNC_(nest) - Return ring ordering of a nest ordering",
-    extended="SELECT _FUNC_(1.27, 1.34, false) FROM foo LIMIT 1;"
+    name = "nest2ring",
+    value = "_FUNC_(order:tinyint, ipix_nest:bigint) -> ipix_ring:bigint",
+    extended = "Convert pixel number from NESTED ordering to RING ordering."
 )
 @UDFType(
     deterministic = true,
     stateful = false
 )
+// @formatter:on
 public class UDFNest2Ring extends GenericUDF {
+    Converter orderConverter;
+    Converter ipixNestConverter;
 
-    private final Object[] result = new Object[1];
-    private final LongWritable pixWritable = new LongWritable();    
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
 
-    private Converter intconverter;
-    private Converter longconverter;
-    
+    ByteWritable orderArg;
+    LongWritable ipixNestArg;
+
+    byte order;
+    long ipixnest;
+    long ipixring;
+
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length != 2) {
-            throw new UDFArgumentLengthException("nest2ring() takes 1 arguments: nest");
+            throw new UDFArgumentLengthException("This function takes 2 arguments: order, ipix_nest");
         }
 
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.
-            getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
-        ObjectInspector longOI = PrimitiveObjectInspectorFactory.
-            getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+        orderConverter = ObjectInspectorConverters.getConverter(arguments[0], byteOI);
+        ipixNestConverter = ObjectInspectorConverters.getConverter(arguments[1], longOI);
 
-        intconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[0], intOI);
-        longconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[1], longOI);
-
-        result[0] = pixWritable;
-
-        return PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+        return longOI;
     }
-
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
+        orderArg = (ByteWritable) orderConverter.convert(arguments[0].get());
+        ipixNestArg = (LongWritable) ipixNestConverter.convert(arguments[1].get());
 
-        IntWritable argsw1 = new IntWritable();
-        LongWritable argsw2 = new LongWritable();
-
-        argsw1 = (IntWritable) intconverter.convert(arguments[0].get());
-        argsw2 = (LongWritable) longconverter.convert(arguments[1].get());
-
-       if (argsw1 == null || argsw2 == null){
-            result[0] = null;
-            return result;
+        if (orderArg == null || ipixNestArg == null) {
+            return null;
         }
 
-        int order = argsw1.get();
-        long nest = argsw2.get();
-        long ring = 0;
-        
-        try {
-            ring = HealpixProc.nest2ring(order,nest);
-        } catch (Exception e) {}
-        
-        pixWritable.set(ring);
-        result[0] = pixWritable;
+        order = orderArg.get();
+        ipixnest = ipixNestArg.get();
 
-        return result[0];
+        try {
+            ipixring = HealpixProc.nest2ring(order, ipixnest);
+        } catch (Exception e) {
+        }
+
+        return new LongWritable(ipixring);
     }
 
     @Override
     public String getDisplayString(String[] arg0) {
-        return "nest2ring(nest)";
+        return String.format("arguments (%d, %d)", order, ipixring);
     }
 }
