@@ -1,8 +1,6 @@
-package es.pic.astro.hive_udf;
+package es.pic.hadoop.udf.healpix;
 
-import java.lang.Math;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -16,105 +14,102 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.C
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.DoubleWritable;
 
+// @formatter:off
 @Description(
-    name="vec2ang",
-    value="_FUNC_(x, y, z, lonlat) - Returns a struct with the angles of a vector",
-    extended="SELECT _FUNC_(3, 1.02,2.35, true) FROM foo LIMIT 1;"
+    name = "vec2ang",
+    value = "_FUNC_(x:float, y:float, z:float, [lonlat:bool=False]) -> array<float>(theta/dec, phi/ra)",
+    extended = "Return the angular coordinates corresponding to this 3D position vector."
 )
 @UDFType(
     deterministic = true,
     stateful = false
 )
+// @formatter:on
 public class UDFVec2Ang extends GenericUDF {
+    Converter xConverter;
+    Converter yConverter;
+    Converter zConverter;
+    Converter lonlatConverter;
 
-    private final Object[] result = new Object[2];
-    private final DoubleWritable phiWritable = new DoubleWritable();
-    private final DoubleWritable thetaWritable = new DoubleWritable();
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
+    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
 
-    private Converter[] doubleconverter = new Converter[3];
-    private Converter[] booleanconverter = new Converter[1];
+    DoubleWritable xArg;
+    DoubleWritable yArg;
+    DoubleWritable zArg;
+    BooleanWritable lonlatArg = new BooleanWritable();
+
+    double x;
+    double y;
+    double z;
+    boolean lonlat;
+
+    DoubleWritable theta = new DoubleWritable();
+    DoubleWritable phi = new DoubleWritable();
+    DoubleWritable ra = new DoubleWritable();
+    DoubleWritable dec = new DoubleWritable();
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-        if (arguments.length<3|| arguments.length>4) {
-            throw new UDFArgumentLengthException("vec2ang() takes at least 3 arguments, no more than 4: v1, v2, v3, lonlat");
+        if (arguments.length < 3 || arguments.length > 4) {
+            throw new UDFArgumentLengthException(
+                    "This function takes at least 3 arguments, no more than 4: x, y, z, lonlat");
         }
-        List<String> fieldNames = new ArrayList<String>();
-        List<ObjectInspector> fieldOIs = new ArrayList<ObjectInspector>();
 
-        ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
+        xConverter = ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
+        yConverter = ObjectInspectorConverters.getConverter(arguments[1], doubleOI);
+        zConverter = ObjectInspectorConverters.getConverter(arguments[2], doubleOI);
 
-        for (int i = 0; i < 3; i ++) {
-            doubleconverter[i] = (Converter) ObjectInspectorConverters.getConverter(arguments[i], doubleOI);
-        }
         if (arguments.length == 4) {
-            ObjectInspector boolOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-            booleanconverter[0] = (Converter) ObjectInspectorConverters.getConverter(arguments[3], boolOI);
+            lonlatConverter = ObjectInspectorConverters.getConverter(arguments[3], boolOI);
         }
 
-        fieldNames.add("theta_lat");
-        fieldNames.add("phi_lon");
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        fieldOIs.add(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-        result[1] = phiWritable;
-        result[0] = thetaWritable;
-
-        return ObjectInspectorFactory.getStandardStructObjectInspector(fieldNames, fieldOIs);
+        return ObjectInspectorFactory.getStandardListObjectInspector(doubleOI);
     }
-
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-        DoubleWritable[] argsw1 = new DoubleWritable[3];
-        BooleanWritable argsw4 = new BooleanWritable(false);
-
-        for( int i = 0; i < 3; i ++) {
-            argsw1[i] = (DoubleWritable) doubleconverter[i].convert(arguments[i].get());
-        }
+        xArg = (DoubleWritable) xConverter.convert(arguments[0].get());
+        yArg = (DoubleWritable) yConverter.convert(arguments[1].get());
+        zArg = (DoubleWritable) zConverter.convert(arguments[2].get());
 
         if (arguments.length == 4) {
-            argsw4 = (BooleanWritable) booleanconverter[0].convert(arguments[3].get());
+            lonlatArg = (BooleanWritable) lonlatConverter.convert(arguments[3].get());
+        }
+        if (xArg == null || yArg == null || zArg == null) {
+            return null;
         }
 
-        if (argsw1[0] == null || argsw1[1] == null || argsw1[2] == null){
-            result[0] = null;
-            result[1] = null;
-            return result;
+        x = xArg.get();
+        y = yArg.get();
+        z = zArg.get();
+
+        lonlat = lonlatArg.get();
+
+        double dnorm = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+
+        theta.set(Math.acos(z / dnorm));
+        phi.set(Math.atan2(y, x));
+
+        if (phi.get() < 0) {
+            phi.set(phi.get() + 2 * Math.PI);
         }
-
-        double[] v = new double[3];
-
-        for ( int i = 0 ; i < 3; i ++) {
-            v[i] = argsw1[i].get();
-        }
-        boolean lonlat = argsw4.get();
-        
-        double dnorm = Math.sqrt(Math.pow(v[0],2) + Math.pow(v[1],2) +Math.pow(v[2],2));
-        thetaWritable.set(Math.acos(v[2] / dnorm));
-        phiWritable.set(Math.atan2(v[1],v[0]));
-
-        if (phiWritable.get() < 0) {
-            phiWritable.set(phiWritable.get() + 2 * Math.PI);
-        }  
         if (lonlat) {
-            thetaWritable.set(90 - thetaWritable.get() * 180 / Math.PI);
-            phiWritable.set( phiWritable.get() * 180 / Math.PI);
-            result[0] = phiWritable;
-            result[1] = thetaWritable;
+            dec.set(90 - theta.get() * 180 / Math.PI);
+            ra.set(phi.get() * 180 / Math.PI);
+            return Arrays.asList(dec, ra);
         } else {
-            result[0] = thetaWritable;
-            result[1] = phiWritable;
+            return Arrays.asList(theta, phi);
         }
-
-        return result;
     }
-
 
     @Override
     public String getDisplayString(String[] arg0) {
-        return "vec2ang(x, y, z, lonlat)";
+        return String.format("arguments (%g, %g, %g, %b)", x, y, z, lonlat);
     }
 }
