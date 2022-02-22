@@ -1,23 +1,36 @@
-# UDFHealpix
- 
-Functions implemented
+-- # Apache Hive UDFs
 
-nside/npix/resolution
- - nest2ring ( int order, long pix )
- - ring2nest ( int order, long pix )
- - nside2npix ( int nSide )
- - npix2nside ( long nPix )
- - nside2order ( int nSide )
- 
-conversion from/to sky coordinates 
- - pix2ang (int order, long pix[, boolean nest, boolean lonlat])
- - pix2vec (int order, long pix[, boolean nest])
- - ang2pix ( int order, double theta, double phi[, boolean ring]) 
- - vec2pix (int order, float x, float y, float z[, boolean nest])
- - vec2ang (double x, double y, double z[, boolean lonlat])
- - ang2vec (double theta, double phi[, boolean lonlat])
- - neighbours (int order, long pix[, boolean nest])
- 
-rotator
- - dir2vec (double x, double y, double z[, boolean lonlat])
- - vec2dir (double theta, double phi[, boolean lonlat])
+-- ## HEALPix
+
+-- ### Conversion from/to sky coordinates
+CREATE FUNCTION hp_ang2pix AS 'es.pic.hadoop.udf.healpix.UDFAng2Pix';
+CREATE FUNCTION hp_ang2vec AS 'es.pic.hadoop.udf.healpix.UDFAng2Vec';
+CREATE FUNCTION hp_pix2ang AS 'es.pic.hadoop.udf.healpix.UDFPix2Ang';
+CREATE FUNCTION hp_pix2vec AS 'es.pic.hadoop.udf.healpix.UDFPix2Vec';
+CREATE FUNCTION hp_vec2ang AS 'es.pic.hadoop.udf.healpix.UDFVec2Ang';
+CREATE FUNCTION hp_vec2pix AS 'es.pic.hadoop.udf.healpix.UDFVec2Pix';
+CREATE FUNCTION hp_neighbours AS 'es.pic.hadoop.udf.healpix.UDFNeighbours';
+
+-- ### Conversion between NESTED and RING schemes
+CREATE FUNCTION hp_nest2ring AS 'es.pic.hadoop.udf.healpix.UDFNest2Ring';
+CREATE FUNCTION hp_ring2nest AS 'es.pic.hadoop.udf.healpix.UDFRing2Nest';
+
+-- ### nside/npix/resolution
+CREATE FUNCTION hp_nside2npix AS 'es.pic.hadoop.udf.healpix.UDFnSide2nPix';
+CREATE FUNCTION hp_npix2nside AS 'es.pic.hadoop.udf.healpix.UDFnPix2nSide';
+CREATE FUNCTION hp_nside2order AS 'es.pic.hadoop.udf.healpix.UDFnSide2Order';
+-- CREATE FUNCTION hp_order2nside
+-- CREATE FUNCTION hp_nside2resol
+-- CREATE FUNCTION hp_nside2pixarea
+-- CREATE FUNCTION hp_maxpixrad
+
+-- ### Pixel querying routines
+-- CREATE FUNCTION hp_boundaries
+
+## Math
+CREATE FUNCTION atan2 AS 'es.pic.hadoop.udf.healpix.UDFAtan2';
+CREATE FUNCTION angdist AS 'es.pic.hadoop.udf.healpix.UDFAngDist';
+
+## Misc
+CREATE FUNCTION magnified_positions AS 'es.pic.hadoop.udf.healpix.UDFMagnifiedPositions';
+CREATE FUNCTION hp_mw_theta AS 'es.pic.hadoop.udf.healpix.UDFMWtheta';
