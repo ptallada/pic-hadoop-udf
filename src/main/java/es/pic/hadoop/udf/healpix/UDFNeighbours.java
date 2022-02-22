@@ -1,4 +1,4 @@
-package es.pic.astro.hive_udf;
+package es.pic.hadoop.udf.healpix;
 
 import java.util.ArrayList;
 
@@ -14,85 +14,99 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.C
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.BooleanWritable;
+import org.apache.hadoop.io.ByteWritable;
+import org.apache.hadoop.io.LongWritable;
+
 import healpix.essentials.HealpixProc;
 
+// @formatter:off
 @Description(
-    name="neighbours",
-    value="_FUNC_(order, pix, nest) - Returns a struct with 8 neighbours",
-    extended="SELECT _FUNC_(3, 646, false) FROM foo LIMIT 1;"
+    name = "neighbours",
+    value = "_FUNC_(order:tinyint, ipix:bigint, [nest:bool=False]) -> array<ipix:bigint>",
+    extended = "Return the nearest 8 pixels (SW, W, NW, N, NE, E, SE and S neighbours). If a neighbor does not exist the corresponding pixel number will be -1."
 )
 @UDFType(
     deterministic = true,
     stateful = false
 )
+// @formatter:on
 public class UDFNeighbours extends GenericUDF {
+    Converter orderConverter;
+    Converter ipixConverter;
+    Converter nestConverter;
 
-    private Converter intconverter;
-    private Converter longconverter;
-    private Converter booleanconverter;
-    
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory
+            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
+
+    ByteWritable orderArg;
+    LongWritable ipixArg;
+    BooleanWritable nestArg = new BooleanWritable();
+
+    byte order;
+    long ipix;
+    boolean nest;
+
+    long[] neighbours;
+    ArrayList<LongWritable> result = new ArrayList<LongWritable>();
+
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length < 2 || arguments.length > 3) {
-            throw new UDFArgumentLengthException("neighbours() takes at least 2 arguments, not more than 3: order, pix, nest");
+            throw new UDFArgumentLengthException(
+                    "This function takes at least 2 arguments, not more than 3: order, pix, nest");
         }
-        ObjectInspector intOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
-        ObjectInspector longOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
-        
-        intconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[0], intOI);
-        longconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[1], longOI);
+
+        orderConverter = ObjectInspectorConverters.getConverter(arguments[0], byteOI);
+        ipixConverter = ObjectInspectorConverters.getConverter(arguments[1], longOI);
+
         if (arguments.length == 3) {
-            ObjectInspector boolOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-            booleanconverter = (Converter) ObjectInspectorConverters.getConverter(arguments[2], boolOI);
+            nestConverter = ObjectInspectorConverters.getConverter(arguments[2], boolOI);
         }
-        
-        return ObjectInspectorFactory.getStandardListObjectInspector(
-            PrimitiveObjectInspectorFactory.writableLongObjectInspector
-        );
+
+        return ObjectInspectorFactory.getStandardListObjectInspector(longOI);
     }
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-    
-        IntWritable argsw1 = new IntWritable();
-        LongWritable argsw2 = new LongWritable();
-        BooleanWritable argsw3 = new BooleanWritable(false);
-        argsw1 = (IntWritable) intconverter.convert(arguments[0].get());
-        argsw2 = (LongWritable) longconverter.convert(arguments[1].get());
+        orderArg = (ByteWritable) orderConverter.convert(arguments[0].get());
+        ipixArg = (LongWritable) ipixConverter.convert(arguments[1].get());
+
         if (arguments.length == 3) {
-            argsw3 = (BooleanWritable) booleanconverter.convert(arguments[2].get());
+            nestArg = (BooleanWritable) nestConverter.convert(arguments[2].get());
         }
-        
-        if (argsw1 == null || argsw2 == null){
+        if (orderArg == null || ipixArg == null) {
             return null;
         }
 
-        int order = argsw1.get();
-        long pix = argsw2.get();
-        boolean nest = argsw3.get();
+        order = orderArg.get();
+        ipix = ipixArg.get();
+        nest = nestArg.get();
 
-        ArrayList<LongWritable> result = new ArrayList<LongWritable>();        
-        long[] res;
-        try{
+        long[] neighbours;
+        try {
             if (nest == true) {
-                res = HealpixProc.neighboursNest(order, pix);
+                neighbours = HealpixProc.neighboursNest(order, ipix);
             } else {
-                res = HealpixProc.neighboursRing(order, pix);
+                neighbours = HealpixProc.neighboursRing(order, ipix);
             }
-            
-            for(int i = 0; i < 8; i++){ 
-                result.add(new LongWritable(res[i]));
+
+            result.clear();
+            for (int i = 0; i < 8; i++) {
+                result.add(new LongWritable(neighbours[i]));
             }
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
         return result;
     }
 
     @Override
     public String getDisplayString(String[] arg0) {
-        return "neighbours(order, pix, nest)";
+        return String.format("arguments (%d, %d, %b)", order, ipix, nest);
     }
 }
