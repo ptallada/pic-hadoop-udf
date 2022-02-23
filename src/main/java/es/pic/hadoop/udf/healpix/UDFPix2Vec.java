@@ -100,6 +100,7 @@ public class UDFPix2Vec extends GenericUDF {
                 vec = HealpixProc.pix2vecRing(order, ipix);
             }
         } catch (Exception e) {
+            throw new HiveException(e);
         }
 
         x.set(vec.x);

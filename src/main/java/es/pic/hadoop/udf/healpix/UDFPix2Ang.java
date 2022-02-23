@@ -111,6 +111,7 @@ public class UDFPix2Ang extends GenericUDF {
                 pt = HealpixProc.pix2angRing(order, ipix);
             }
         } catch (Exception e) {
+            throw new HiveException(e);
         }
 
         if (lonlat) {

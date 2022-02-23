@@ -107,6 +107,7 @@ public class UDFVec2Pix extends GenericUDF {
                 ipix = HealpixProc.vec2pixRing(order, new Vec3(x, y, z));
             }
         } catch (Exception e) {
+            throw new HiveException(e);
         }
 
         return new LongWritable(ipix);

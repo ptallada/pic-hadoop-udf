@@ -70,6 +70,7 @@ public class UDFNest2Ring extends GenericUDF {
         try {
             ipixring = HealpixProc.nest2ring(order, ipixnest);
         } catch (Exception e) {
+            throw new HiveException(e);
         }
 
         return new LongWritable(ipixring);

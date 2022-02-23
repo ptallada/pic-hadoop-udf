@@ -122,6 +122,7 @@ public class UDFAng2Pix extends GenericUDF {
                 ipix = HealpixProc.ang2pixRing(order, new Pointing(theta, phi));
             }
         } catch (Exception e) {
+            throw new HiveException(e);
         }
 
         return new LongWritable(ipix);

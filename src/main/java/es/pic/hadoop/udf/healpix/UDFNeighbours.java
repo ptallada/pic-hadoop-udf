@@ -100,6 +100,7 @@ public class UDFNeighbours extends GenericUDF {
                 result.add(new LongWritable(neighbours[i]));
             }
         } catch (Exception e) {
+            throw new HiveException(e);
         }
 
         return result;
