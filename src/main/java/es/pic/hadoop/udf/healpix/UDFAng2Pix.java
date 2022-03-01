@@ -67,7 +67,7 @@ public class UDFAng2Pix extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length < 3 || arguments.length > 5) {
             throw new UDFArgumentLengthException(
-                    "This functions takes at least 3 arguments, no more than 5: order, theta/dec, phi/ra, nest, lonlat");
+                    "This function takes at least 3 arguments, no more than 5: order, theta/dec, phi/ra, nest, lonlat");
         }
 
         orderConverter = ObjectInspectorConverters.getConverter(arguments[0], byteOI);
