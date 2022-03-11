@@ -11,7 +11,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
@@ -29,6 +28,7 @@ import org.apache.hadoop.io.Writable;
     extended = "Returns the sum of a set of arrays."
 )
 // @formatter:on
+@SuppressWarnings("deprecation")
 public class UDAFArraySum extends AbstractGenericUDAFResolver {
 
     @Override
@@ -72,7 +72,9 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
 
         TypeInfo[] parameters = info.getParameters();
 
-        GenericUDAFArraySumEvaluator eval = (GenericUDAFArraySumEvaluator) getEvaluator(parameters);
+        @SuppressWarnings("unchecked")
+        GenericUDAFArraySumEvaluator<Writable> eval = (GenericUDAFArraySumEvaluator<Writable>) getEvaluator(
+                parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());

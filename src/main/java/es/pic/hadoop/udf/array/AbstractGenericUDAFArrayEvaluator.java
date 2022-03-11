@@ -8,14 +8,12 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-import org.apache.hadoop.hive.serde2.lazybinary.LazyBinaryArray;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorConverter;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Writable;
 
@@ -78,11 +76,11 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
     }
 
     @Override
-    public AggregationBuffer getNewAggregationBuffer() throws HiveException {
+    public AbstractAggregationBuffer getNewAggregationBuffer() throws HiveException {
         return new ArrayAggregationBuffer();
     }
 
-    protected void iterateFirst(AggregationBuffer buff, List array) {
+    protected void iterateFirst(AbstractAggregationBuffer buff, List<Writable> array) {
         ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
 
         agg.array = new ArrayList<T>(array.size());
@@ -97,7 +95,7 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
         }
     }
 
-    protected void iterateNext(AggregationBuffer buff, List array) {
+    protected void iterateNext(AbstractAggregationBuffer buff, List<Writable> array) {
         ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
 
         for (int i = 0; i < array.size(); i++) {
@@ -129,9 +127,10 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
             throw new UDFArgumentLengthException("This function takes exactly one argument: array");
         }
 
-        List array = inputOI.getList(parameters[0]);
+        ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
+        List<Writable> array = (List<Writable>) inputOI.getList(parameters[0]);
 
-        mergeInternal(buff, array);
+        mergeInternal(agg, array);
     }
 
     @Override
@@ -140,13 +139,14 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
     }
 
     @Override
-    public void merge(AggregationBuffer agg, Object partial) throws HiveException {
-        List<Object> array = ((LazyBinaryArray) partial).getList();
+    public void merge(AggregationBuffer buff, Object partial) throws HiveException {
+        ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
+        List<Writable> array = (List<Writable>) outputOI.getList(partial);
 
         mergeInternal(agg, array);
     }
 
-    protected void mergeInternal(AggregationBuffer buff, List array) throws HiveException {
+    protected void mergeInternal(AbstractAggregationBuffer buff, List<Writable> array) throws HiveException {
         ArrayAggregationBuffer agg = (ArrayAggregationBuffer) buff;
 
         if (array == null) {

@@ -11,7 +11,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
@@ -33,6 +32,7 @@ import org.apache.hadoop.io.Writable;
     extended = "Returns the min of a set of arrays."
 )
 // @formatter:on
+@SuppressWarnings("deprecation")
 public class UDAFArrayMin extends AbstractGenericUDAFResolver {
 
     @Override
@@ -80,7 +80,9 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
 
         TypeInfo[] parameters = info.getParameters();
 
-        GenericUDAFArrayMinEvaluator eval = (GenericUDAFArrayMinEvaluator) getEvaluator(parameters);
+        @SuppressWarnings("unchecked")
+        GenericUDAFArrayMinEvaluator<Writable> eval = (GenericUDAFArrayMinEvaluator<Writable>) getEvaluator(
+                parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());

@@ -8,7 +8,6 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -80,7 +79,8 @@ public class TestArrayMax {
 
     abstract class AbstractEvaluator {
         protected GenericUDAFEvaluator eval;
-        protected AggregationBuffer agg;
+        @SuppressWarnings("deprecation")
+        protected org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer agg;
 
         protected PrimitiveTypeInfo inputPrimitiveType;
 
@@ -150,6 +150,7 @@ public class TestArrayMax {
         }
 
         @Test
+        @SuppressWarnings("unchecked")
         void testIterate() throws Exception {
             initEvaluator();
 
