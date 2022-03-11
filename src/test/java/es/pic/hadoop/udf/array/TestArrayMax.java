@@ -11,7 +11,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
-import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -25,15 +24,16 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.ShortWritable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestArraySum {
+public class TestArrayMax {
 
-    protected UDAFArraySum udaf = new UDAFArraySum();
+    protected UDAFArrayMax udaf = new UDAFArrayMax();
 
     @Nested
     class Arguments {
@@ -123,7 +123,7 @@ public class TestArraySum {
                     inputOI
             });
 
-            assertEquals(outputOI, returnOI);
+            assertEquals(inputOI, returnOI);
 
             eval.reset(agg);
         }
@@ -157,7 +157,7 @@ public class TestArraySum {
                 eval.iterate(agg, new Object[] {
                         inputs[i]
                 });
-                assertEquals(((UDAFArraySum.GenericUDAFArraySumEvaluator.ArrayAggregationBuffer) agg).array
+                assertEquals(((UDAFArrayMax.GenericUDAFArrayMaxEvaluator.ArrayAggregationBuffer) agg).array
                         .toString(), outputs[i]);
             }
         }
@@ -177,17 +177,17 @@ public class TestArraySum {
                     new Object[] {
                             null, null,
                     }, new Object[] {
-                            null, new ByteWritable((byte) 1)
+                            null, new ByteWritable((byte) 3)
                     }, new Object[] {
                             new ByteWritable((byte) 2), null
                     }, new Object[] {
-                            new ByteWritable((byte) 3), new ByteWritable((byte) 3)
+                            new ByteWritable((byte) 3), new ByteWritable((byte) 1)
                     }, new Object[] {
                             null, null
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 3]", "[2, 3]", "[3, 3]", "[3, 3]"
             };
         }
     }
@@ -203,17 +203,17 @@ public class TestArraySum {
                     new Object[] {
                             null, null,
                     }, new Object[] {
-                            null, new ShortWritable((short) 1)
+                            null, new ShortWritable((short) 3)
                     }, new Object[] {
                             new ShortWritable((short) 2), null
                     }, new Object[] {
-                            new ShortWritable((short) 3), new ShortWritable((short) 3)
+                            new ShortWritable((short) 3), new ShortWritable((short) 1)
                     }, new Object[] {
                             null, null
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 3]", "[2, 3]", "[3, 3]", "[3, 3]"
             };
         }
     }
@@ -229,17 +229,17 @@ public class TestArraySum {
                     new Object[] {
                             null, null,
                     }, new Object[] {
-                            null, new IntWritable(1)
+                            null, new IntWritable(3)
                     }, new Object[] {
                             new IntWritable(2), null
                     }, new Object[] {
-                            new IntWritable(3), new IntWritable(3)
+                            new IntWritable(3), new IntWritable(1)
                     }, new Object[] {
                             null, null
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 3]", "[2, 3]", "[3, 3]", "[3, 3]"
             };
         }
     }
@@ -258,17 +258,17 @@ public class TestArraySum {
                     new Object[] {
                             null, null,
                     }, new Object[] {
-                            null, new LongWritable(1)
+                            null, new LongWritable(3)
                     }, new Object[] {
                             new LongWritable(2), null
                     }, new Object[] {
-                            new LongWritable(3), new LongWritable(3)
+                            new LongWritable(3), new LongWritable(1)
                     }, new Object[] {
                             null, null
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 3]", "[2, 3]", "[3, 3]", "[3, 3]"
             };
         }
 
@@ -285,17 +285,17 @@ public class TestArraySum {
                     new Object[] {
                             null, null,
                     }, new Object[] {
-                            null, new FloatWritable((float) 0.25)
+                            null, new FloatWritable((float) 0.75)
                     }, new Object[] {
                             new FloatWritable((float) 0.50), null
                     }, new Object[] {
-                            new FloatWritable((float) 0.75), new FloatWritable((float) 0.75)
+                            new FloatWritable((float) 0.75), new FloatWritable((float) 0.5)
                     }, new Object[] {
                             null, null
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 0.25]", "[0.5, 0.25]", "[1.25, 1.0]", "[1.25, 1.0]"
+                    "[null, null]", "[null, 0.75]", "[0.5, 0.75]", "[0.75, 0.75]", "[0.75, 0.75]"
             };
         }
     }
@@ -311,17 +311,17 @@ public class TestArraySum {
                     new Object[] {
                             null, null,
                     }, new Object[] {
-                            null, new DoubleWritable(0.25)
+                            null, new DoubleWritable(0.75)
                     }, new Object[] {
                             new DoubleWritable(0.50), null
                     }, new Object[] {
-                            new DoubleWritable(0.75), new DoubleWritable(0.75)
+                            new DoubleWritable(0.75), new DoubleWritable(0.50)
                     }, new Object[] {
                             null, null
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 0.25]", "[0.5, 0.25]", "[1.25, 1.0]", "[1.25, 1.0]"
+                    "[null, null]", "[null, 0.75]", "[0.5, 0.75]", "[0.75, 0.75]", "[0.75, 0.75]"
             };
         }
     }

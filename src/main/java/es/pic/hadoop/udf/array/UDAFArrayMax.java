@@ -28,12 +28,12 @@ import org.apache.hadoop.io.Writable;
 
 // @formatter:off
 @Description(
-    name = "array_min",
+    name = "array_max",
     value = "_FUNC_(array<T>) -> array<T>",
-    extended = "Returns the min of a set of arrays."
+    extended = "Returns the max of a set of arrays."
 )
 // @formatter:on
-public class UDAFArrayMin extends AbstractGenericUDAFResolver {
+public class UDAFArrayMax extends AbstractGenericUDAFResolver {
 
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
@@ -52,17 +52,17 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
         if (listTI.getListElementTypeInfo().getCategory() == ObjectInspector.Category.PRIMITIVE) {
             switch (((PrimitiveTypeInfo) elementTI).getPrimitiveCategory()) {
             case BYTE:
-                return new UDAFArrayByteMinEvaluator();
+                return new UDAFArrayByteMaxEvaluator();
             case SHORT:
-                return new UDAFArrayShortMinEvaluator();
+                return new UDAFArrayShortMaxEvaluator();
             case INT:
-                return new UDAFArrayIntMinEvaluator();
+                return new UDAFArrayIntMaxEvaluator();
             case LONG:
-                return new UDAFArrayLongMinEvaluator();
+                return new UDAFArrayLongMaxEvaluator();
             case FLOAT:
-                return new UDAFArrayFloatMinEvaluator();
+                return new UDAFArrayFloatMaxEvaluator();
             case DOUBLE:
-                return new UDAFArrayDoubleMinEvaluator();
+                return new UDAFArrayDoubleMaxEvaluator();
             default:
                 break;
             }
@@ -80,7 +80,7 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
 
         TypeInfo[] parameters = info.getParameters();
 
-        GenericUDAFArrayMinEvaluator eval = (GenericUDAFArrayMinEvaluator) getEvaluator(parameters);
+        GenericUDAFArrayMaxEvaluator eval = (GenericUDAFArrayMaxEvaluator) getEvaluator(parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());
@@ -90,7 +90,7 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
     }
 
     @UDFType(commutative = true)
-    public static abstract class GenericUDAFArrayMinEvaluator<T extends Writable>
+    public static abstract class GenericUDAFArrayMaxEvaluator<T extends Writable>
             extends AbstractGenericUDAFArrayEvaluator<T> {
 
         @Override
@@ -120,39 +120,39 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
         }
     }
 
-    public static class UDAFArrayByteMinEvaluator extends GenericUDAFArrayMinEvaluator<ByteWritable> {
+    public static class UDAFArrayByteMaxEvaluator extends GenericUDAFArrayMaxEvaluator<ByteWritable> {
         protected ByteWritable combine(ByteWritable a, ByteWritable b) {
-            return new ByteWritable((byte) Integer.min(a.get(), b.get()));
+            return new ByteWritable((byte) Integer.max(a.get(), b.get()));
         }
     }
 
-    public static class UDAFArrayShortMinEvaluator extends GenericUDAFArrayMinEvaluator<ShortWritable> {
+    public static class UDAFArrayShortMaxEvaluator extends GenericUDAFArrayMaxEvaluator<ShortWritable> {
         protected ShortWritable combine(ShortWritable a, ShortWritable b) {
-            return new ShortWritable((short) Integer.min(a.get(), b.get()));
+            return new ShortWritable((short) Integer.max(a.get(), b.get()));
         }
     }
 
-    public static class UDAFArrayIntMinEvaluator extends GenericUDAFArrayMinEvaluator<IntWritable> {
+    public static class UDAFArrayIntMaxEvaluator extends GenericUDAFArrayMaxEvaluator<IntWritable> {
         protected IntWritable combine(IntWritable a, IntWritable b) {
-            return new IntWritable(Integer.min(a.get(), b.get()));
+            return new IntWritable(Integer.max(a.get(), b.get()));
         }
     }
 
-    public static class UDAFArrayLongMinEvaluator extends GenericUDAFArrayMinEvaluator<LongWritable> {
+    public static class UDAFArrayLongMaxEvaluator extends GenericUDAFArrayMaxEvaluator<LongWritable> {
         protected LongWritable combine(LongWritable a, LongWritable b) {
-            return new LongWritable(Long.min(a.get(), b.get()));
+            return new LongWritable(Long.max(a.get(), b.get()));
         }
     }
 
-    public static class UDAFArrayFloatMinEvaluator extends GenericUDAFArrayMinEvaluator<FloatWritable> {
+    public static class UDAFArrayFloatMaxEvaluator extends GenericUDAFArrayMaxEvaluator<FloatWritable> {
         protected FloatWritable combine(FloatWritable a, FloatWritable b) {
-            return new FloatWritable(Float.min(a.get(), b.get()));
+            return new FloatWritable(Float.max(a.get(), b.get()));
         }
     }
 
-    public static class UDAFArrayDoubleMinEvaluator extends GenericUDAFArrayMinEvaluator<DoubleWritable> {
+    public static class UDAFArrayDoubleMaxEvaluator extends GenericUDAFArrayMaxEvaluator<DoubleWritable> {
         protected DoubleWritable combine(DoubleWritable a, DoubleWritable b) {
-            return new DoubleWritable(Double.min(a.get(), b.get()));
+            return new DoubleWritable(Double.max(a.get(), b.get()));
         }
     }
 }
