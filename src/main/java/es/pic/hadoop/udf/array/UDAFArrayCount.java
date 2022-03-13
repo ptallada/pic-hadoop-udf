@@ -17,23 +17,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
-import org.apache.hadoop.io.ByteWritable;
-import org.apache.hadoop.io.DoubleWritable;
-import org.apache.hadoop.io.FloatWritable;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.ShortWritable;
-import org.apache.hadoop.io.Writable;
 
 // @formatter:off
 @Description(
-    name = "array_min",
+    name = "array_count",
     value = "_FUNC_(array<T>) -> array<T>",
-    extended = "Returns the min of a set of arrays."
+    extended = "Returns the count of a set of arrays."
 )
 // @formatter:on
 @SuppressWarnings("deprecation")
-public class UDAFArrayMin extends AbstractGenericUDAFResolver {
+public class UDAFArrayCount extends AbstractGenericUDAFResolver {
 
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
@@ -52,17 +46,12 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
         if (listTI.getListElementTypeInfo().getCategory() == ObjectInspector.Category.PRIMITIVE) {
             switch (((PrimitiveTypeInfo) elementTI).getPrimitiveCategory()) {
             case BYTE:
-                return new UDAFArrayByteMinEvaluator();
             case SHORT:
-                return new UDAFArrayShortMinEvaluator();
             case INT:
-                return new UDAFArrayIntMinEvaluator();
             case LONG:
-                return new UDAFArrayLongMinEvaluator();
             case FLOAT:
-                return new UDAFArrayFloatMinEvaluator();
             case DOUBLE:
-                return new UDAFArrayDoubleMinEvaluator();
+                return new UDAFArrayCountEvaluator();
             default:
                 break;
             }
@@ -80,9 +69,7 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
 
         TypeInfo[] parameters = info.getParameters();
 
-        @SuppressWarnings("unchecked")
-        GenericUDAFArrayMinEvaluator<Writable> eval = (GenericUDAFArrayMinEvaluator<Writable>) getEvaluator(
-                parameters);
+        UDAFArrayCountEvaluator eval = (UDAFArrayCountEvaluator) getEvaluator(parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());
@@ -92,8 +79,7 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
     }
 
     @UDFType(commutative = true)
-    public static abstract class GenericUDAFArrayMinEvaluator<T extends Writable>
-            extends AbstractGenericUDAFArrayEvaluator<T> {
+    public static class UDAFArrayCountEvaluator extends AbstractGenericUDAFArrayEvaluator<LongWritable> {
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
@@ -110,7 +96,8 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
             case FLOAT:
             case DOUBLE:
                 outputElementOI = PrimitiveObjectInspectorFactory
-                        .getPrimitiveWritableObjectInspector(inputElementOI.getPrimitiveCategory());
+                        .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+                outputOI = ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
                 break;
             default:
                 throw new UDFArgumentTypeException(0, String.format(
@@ -118,72 +105,24 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
                         inputOI.getTypeName()));
             }
 
-            return ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
+            return outputOI;
         }
-    }
 
-    public static class UDAFArrayByteMinEvaluator extends GenericUDAFArrayMinEvaluator<ByteWritable> {
-        @Override
-        protected ByteWritable doIterate(ByteWritable self, ByteWritable other) {
-            if (self == null) {
-                return other;
-            } else {
-                return new ByteWritable((byte) Integer.min(self.get(), other.get()));
-            }
-        }
-    }
-
-    public static class UDAFArrayShortMinEvaluator extends GenericUDAFArrayMinEvaluator<ShortWritable> {
-        @Override
-        protected ShortWritable doIterate(ShortWritable self, ShortWritable other) {
-            if (self == null) {
-                return other;
-            } else {
-                return new ShortWritable((short) Integer.min(self.get(), other.get()));
-            }
-        }
-    }
-
-    public static class UDAFArrayIntMinEvaluator extends GenericUDAFArrayMinEvaluator<IntWritable> {
-        @Override
-        protected IntWritable doIterate(IntWritable self, IntWritable other) {
-            if (self == null) {
-                return other;
-            } else {
-                return new IntWritable(Integer.min(self.get(), other.get()));
-            }
-        }
-    }
-
-    public static class UDAFArrayLongMinEvaluator extends GenericUDAFArrayMinEvaluator<LongWritable> {
         @Override
         protected LongWritable doIterate(LongWritable self, LongWritable other) {
             if (self == null) {
-                return other;
+                return new LongWritable(1);
             } else {
-                return new LongWritable(Long.min(self.get(), other.get()));
+                return new LongWritable(self.get() + 1);
             }
         }
-    }
 
-    public static class UDAFArrayFloatMinEvaluator extends GenericUDAFArrayMinEvaluator<FloatWritable> {
         @Override
-        protected FloatWritable doIterate(FloatWritable self, FloatWritable other) {
+        protected LongWritable doMerge(LongWritable self, LongWritable other) {
             if (self == null) {
-                return other;
+                return new LongWritable(other.get());
             } else {
-                return new FloatWritable(Float.min(self.get(), other.get()));
-            }
-        }
-    }
-
-    public static class UDAFArrayDoubleMinEvaluator extends GenericUDAFArrayMinEvaluator<DoubleWritable> {
-        @Override
-        protected DoubleWritable doIterate(DoubleWritable self, DoubleWritable other) {
-            if (self == null) {
-                return other;
-            } else {
-                return new DoubleWritable(Double.min(self.get(), other.get()));
+                return new LongWritable(self.get() + other.get());
             }
         }
     }

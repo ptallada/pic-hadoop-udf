@@ -118,14 +118,24 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
     }
 
     public static class UDAFArrayLongSumEvaluator extends GenericUDAFArraySumEvaluator<LongWritable> {
-        protected LongWritable combine(LongWritable a, LongWritable b) {
-            return new LongWritable(a.get() + b.get());
+        @Override
+        protected LongWritable doIterate(LongWritable self, LongWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new LongWritable(self.get() + other.get());
+            }
         }
     }
 
     public static class UDAFArrayDoubleSumEvaluator extends GenericUDAFArraySumEvaluator<DoubleWritable> {
-        protected DoubleWritable combine(DoubleWritable a, DoubleWritable b) {
-            return new DoubleWritable(a.get() + b.get());
+        @Override
+        protected DoubleWritable doIterate(DoubleWritable self, DoubleWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new DoubleWritable(self.get() + other.get());
+            }
         }
     }
 }

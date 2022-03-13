@@ -8,9 +8,9 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
 import org.apache.hadoop.hive.serde2.io.ShortWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
@@ -33,9 +33,9 @@ import org.junit.jupiter.api.TestInstance;
 import es.pic.hadoop.udf.array.AbstractGenericUDAFArrayEvaluator.ArrayAggregationBuffer;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestArraySum {
+public class TestArrayCount {
 
-    protected UDAFArraySum udaf = new UDAFArraySum();
+    protected UDAFArrayCount udaf = new UDAFArrayCount();
 
     @Nested
     class Arguments {
@@ -150,7 +150,6 @@ public class TestArraySum {
 
         @Test
         void testIterate() throws Exception {
-            initEvaluator();
             @SuppressWarnings("rawtypes")
             ArrayAggregationBuffer agg = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
 
@@ -161,6 +160,30 @@ public class TestArraySum {
 
                 assertEquals(agg.array.toString(), outputs[i]);
             }
+        }
+
+        @Test
+        void testMerge() throws Exception {
+            initEvaluator();
+
+            @SuppressWarnings("rawtypes")
+            ArrayAggregationBuffer agg1 = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
+            @SuppressWarnings("rawtypes")
+            ArrayAggregationBuffer agg2 = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
+
+            for (int i = 0; i < inputs.length; i++) {
+                eval.iterate(agg1, new Object[] {
+                        inputs[i]
+                });
+            }
+
+            Object partial = eval.terminatePartial(agg1);
+
+            eval.merge(agg2, null); // Must not throw any exception
+            eval.merge(agg2, partial);
+
+            assertEquals(agg2.array.toString(), agg1.array.toString());
+            assertEquals(agg2.array.toString(), outputs[outputs.length - 1]);
         }
     }
 
@@ -188,7 +211,7 @@ public class TestArraySum {
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 1]", "[1, 1]", "[2, 2]", "[2, 2]"
             };
         }
     }
@@ -214,7 +237,7 @@ public class TestArraySum {
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 1]", "[1, 1]", "[2, 2]", "[2, 2]"
             };
         }
     }
@@ -240,7 +263,7 @@ public class TestArraySum {
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 1]", "[1, 1]", "[2, 2]", "[2, 2]"
             };
         }
     }
@@ -269,7 +292,7 @@ public class TestArraySum {
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 1]", "[2, 1]", "[5, 4]", "[5, 4]"
+                    "[null, null]", "[null, 1]", "[1, 1]", "[2, 2]", "[2, 2]"
             };
         }
 
@@ -281,7 +304,7 @@ public class TestArraySum {
         public FloatEvaluator() {
             inputPrimitiveType = TypeInfoFactory.floatTypeInfo;
             inputElementOI = PrimitiveObjectInspectorFactory.writableFloatObjectInspector;
-            outputElementOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            outputElementOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
             inputs = new Object[] {
                     new Object[] {
                             null, null,
@@ -296,7 +319,7 @@ public class TestArraySum {
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 0.25]", "[0.5, 0.25]", "[1.25, 1.0]", "[1.25, 1.0]"
+                    "[null, null]", "[null, 1]", "[1, 1]", "[2, 2]", "[2, 2]"
             };
         }
     }
@@ -307,7 +330,7 @@ public class TestArraySum {
         public DoubleEvaluator() {
             inputPrimitiveType = TypeInfoFactory.doubleTypeInfo;
             inputElementOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-            outputElementOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+            outputElementOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
             inputs = new Object[] {
                     new Object[] {
                             null, null,
@@ -322,7 +345,7 @@ public class TestArraySum {
                     },
             };
             outputs = new String[] {
-                    "[null, null]", "[null, 0.25]", "[0.5, 0.25]", "[1.25, 1.0]", "[1.25, 1.0]"
+                    "[null, null]", "[null, 1]", "[1, 1]", "[2, 2]", "[2, 2]"
             };
         }
     }

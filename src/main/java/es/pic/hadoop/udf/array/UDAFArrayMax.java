@@ -123,38 +123,68 @@ public class UDAFArrayMax extends AbstractGenericUDAFResolver {
     }
 
     public static class UDAFArrayByteMaxEvaluator extends GenericUDAFArrayMaxEvaluator<ByteWritable> {
-        protected ByteWritable combine(ByteWritable a, ByteWritable b) {
-            return new ByteWritable((byte) Integer.max(a.get(), b.get()));
+        @Override
+        protected ByteWritable doIterate(ByteWritable self, ByteWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new ByteWritable((byte) Integer.max(self.get(), other.get()));
+            }
         }
     }
 
     public static class UDAFArrayShortMaxEvaluator extends GenericUDAFArrayMaxEvaluator<ShortWritable> {
-        protected ShortWritable combine(ShortWritable a, ShortWritable b) {
-            return new ShortWritable((short) Integer.max(a.get(), b.get()));
+        @Override
+        protected ShortWritable doIterate(ShortWritable self, ShortWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new ShortWritable((short) Integer.max(self.get(), other.get()));
+            }
         }
     }
 
     public static class UDAFArrayIntMaxEvaluator extends GenericUDAFArrayMaxEvaluator<IntWritable> {
-        protected IntWritable combine(IntWritable a, IntWritable b) {
-            return new IntWritable(Integer.max(a.get(), b.get()));
+        @Override
+        protected IntWritable doIterate(IntWritable self, IntWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new IntWritable(Integer.max(self.get(), other.get()));
+            }
         }
     }
 
     public static class UDAFArrayLongMaxEvaluator extends GenericUDAFArrayMaxEvaluator<LongWritable> {
-        protected LongWritable combine(LongWritable a, LongWritable b) {
-            return new LongWritable(Long.max(a.get(), b.get()));
+        @Override
+        protected LongWritable doIterate(LongWritable self, LongWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new LongWritable(Long.max(self.get(), other.get()));
+            }
         }
     }
 
     public static class UDAFArrayFloatMaxEvaluator extends GenericUDAFArrayMaxEvaluator<FloatWritable> {
-        protected FloatWritable combine(FloatWritable a, FloatWritable b) {
-            return new FloatWritable(Float.max(a.get(), b.get()));
+        @Override
+        protected FloatWritable doIterate(FloatWritable self, FloatWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new FloatWritable(Float.max(self.get(), other.get()));
+            }
         }
     }
 
     public static class UDAFArrayDoubleMaxEvaluator extends GenericUDAFArrayMaxEvaluator<DoubleWritable> {
-        protected DoubleWritable combine(DoubleWritable a, DoubleWritable b) {
-            return new DoubleWritable(Double.max(a.get(), b.get()));
+        @Override
+        protected DoubleWritable doIterate(DoubleWritable self, DoubleWritable other) {
+            if (self == null) {
+                return other;
+            } else {
+                return new DoubleWritable(Double.max(self.get(), other.get()));
+            }
         }
     }
 }

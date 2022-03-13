@@ -10,6 +10,7 @@ import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
+import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import es.pic.hadoop.udf.array.AbstractGenericUDAFArrayEvaluator.ArrayAggregationBuffer;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestArrayMin {
 
@@ -36,6 +39,7 @@ public class TestArrayMin {
 
     @Nested
     class Arguments {
+
         @Test
         void isAllColumns() {
             ObjectInspector[] params = new ObjectInspector[0];
@@ -79,8 +83,6 @@ public class TestArrayMin {
 
     abstract class AbstractEvaluator {
         protected GenericUDAFEvaluator eval;
-        @SuppressWarnings("deprecation")
-        protected org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer agg;
 
         protected PrimitiveTypeInfo inputPrimitiveType;
 
@@ -99,7 +101,6 @@ public class TestArrayMin {
                     TypeInfoFactory.getListTypeInfo(inputPrimitiveType)
             };
             eval = udaf.getEvaluator(parameters);
-            agg = eval.getNewAggregationBuffer();
 
             inputOI = ObjectInspectorFactory.getStandardListObjectInspector(inputElementOI);
             outputOI = ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
@@ -124,13 +125,12 @@ public class TestArrayMin {
             });
 
             assertEquals(inputOI, returnOI);
-
-            eval.reset(agg);
         }
 
         @Test
         void testLengthMismatch() throws Exception {
             initEvaluator();
+            AbstractAggregationBuffer agg = (AbstractAggregationBuffer) eval.getNewAggregationBuffer();
 
             Object[] inputs = new Object[] {
                     new Object[] {
@@ -150,16 +150,16 @@ public class TestArrayMin {
         }
 
         @Test
-        @SuppressWarnings("unchecked")
         void testIterate() throws Exception {
             initEvaluator();
+            @SuppressWarnings("rawtypes")
+            ArrayAggregationBuffer agg = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
 
             for (int i = 0; i < inputs.length; i++) {
                 eval.iterate(agg, new Object[] {
                         inputs[i]
                 });
-                assertEquals(((UDAFArrayMin.GenericUDAFArrayMinEvaluator.ArrayAggregationBuffer) agg).array
-                        .toString(), outputs[i]);
+                assertEquals(agg.array.toString(), outputs[i]);
             }
         }
     }

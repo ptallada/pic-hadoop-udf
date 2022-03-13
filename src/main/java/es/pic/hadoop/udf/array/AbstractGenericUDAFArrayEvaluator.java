@@ -80,88 +80,100 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
         return new ArrayAggregationBuffer();
     }
 
-    protected void iterateFirst(AbstractAggregationBuffer buff, List<Writable> array) {
-        ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
+    @Override
+    @SuppressWarnings({
+            "unchecked", "deprecation"
+    })
+    public void reset(AggregationBuffer agg) throws HiveException {
+        ((ArrayAggregationBuffer) agg).array = null;
+    }
 
-        agg.array = new ArrayList<T>(array.size());
-        for (Object element : array) {
-            if (element == null) {
+    protected void initAgg(ArrayAggregationBuffer agg, List<?> array) throws HiveException {
+        if (array == null) {
+            return;
+        } else if ((agg.array != null) && (agg.array.size() != array.size())) {
+            throw new UDFArgumentException(
+                    String.format("Arrays must have equal sizes, %d != %d.", agg.array.size(), array.size()));
+        }
+
+        // Initialize array of nulls
+        if (agg.array == null) {
+            agg.array = new ArrayList<T>(array.size());
+            for (int i = 0; i < array.size(); i++) {
                 agg.array.add(null);
-            } else {
-                Converter inputElementConverter = ObjectInspectorConverters.getConverter(inputElementOI,
-                        outputElementOI);
-                agg.array.add((T) inputElementConverter.convert(element));
             }
         }
     }
 
-    protected void iterateNext(AbstractAggregationBuffer buff, List<Writable> array) {
+    @Override
+    @SuppressWarnings("deprecation")
+    public void iterate(AggregationBuffer buff, Object[] parameters) throws HiveException {
+        if (parameters.length != 1) {
+            throw new UDFArgumentLengthException("This function takes exactly one argument: array");
+        }
+
+        @SuppressWarnings("unchecked")
         ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
+        List<?> array = inputOI.getList(parameters[0]);
+
+        initAgg(agg, array);
 
         for (int i = 0; i < array.size(); i++) {
             Object element = array.get(i);
             if (element != null) {
                 Converter inputElementConverter = ObjectInspectorConverters.getConverter(inputElementOI,
                         outputElementOI);
-                T a = (T) inputElementConverter.convert(element);
-                T b = agg.array.get(i);
-                if (b == null) {
-                    agg.array.set(i, a);
-                } else {
-                    agg.array.set(i, combine(b, a));
-                }
+                @SuppressWarnings("unchecked")
+                T other = (T) inputElementConverter.convert(element);
+                T self = agg.array.get(i);
+                agg.array.set(i, doIterate(self, other));
             }
         }
     }
 
-    protected abstract T combine(T a, T b);
+    protected abstract T doIterate(T self, T other);
 
     @Override
-    public void reset(AggregationBuffer agg) throws HiveException {
-        ((ArrayAggregationBuffer) agg).array = null;
-    }
-
-    @Override
-    public void iterate(AggregationBuffer buff, Object[] parameters) throws HiveException {
-        if (parameters.length != 1) {
-            throw new UDFArgumentLengthException("This function takes exactly one argument: array");
+    @SuppressWarnings("deprecation")
+    public void merge(AggregationBuffer buff, Object partial) throws HiveException {
+        if (partial == null) {
+            return;
         }
 
+        @SuppressWarnings("unchecked")
         ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
-        List<Writable> array = (List<Writable>) inputOI.getList(parameters[0]);
+        @SuppressWarnings("unchecked")
+        List<Writable> array = (List<Writable>) outputOI.getList(partial);
 
-        mergeInternal(agg, array);
+        initAgg(agg, array);
+
+        for (int i = 0; i < array.size(); i++) {
+            Object element = array.get(i);
+            if (element != null) {
+                @SuppressWarnings("unchecked")
+                T other = (T) element;
+                T self = agg.array.get(i);
+                agg.array.set(i, doMerge(self, other));
+            }
+        }
+    }
+
+    protected T doMerge(T self, T other) {
+        return doIterate(self, other);
     }
 
     @Override
+    @SuppressWarnings({
+            "unchecked", "deprecation"
+    })
     public Object terminatePartial(AggregationBuffer agg) throws HiveException {
         return ((ArrayAggregationBuffer) agg).array;
     }
 
     @Override
-    public void merge(AggregationBuffer buff, Object partial) throws HiveException {
-        ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
-        List<Writable> array = (List<Writable>) outputOI.getList(partial);
-
-        mergeInternal(agg, array);
-    }
-
-    protected void mergeInternal(AbstractAggregationBuffer buff, List<Writable> array) throws HiveException {
-        ArrayAggregationBuffer agg = (ArrayAggregationBuffer) buff;
-
-        if (array == null) {
-            return;
-        } else if (agg.array == null) {
-            iterateFirst(agg, array);
-        } else if (agg.array.size() != array.size()) {
-            throw new UDFArgumentException(
-                    String.format("Arrays must have equal sizes, %d != %d.", agg.array.size(), array.size()));
-        } else {
-            iterateNext(agg, array);
-        }
-    }
-
-    @Override
+    @SuppressWarnings({
+            "unchecked", "deprecation"
+    })
     public Object terminate(AggregationBuffer agg) throws HiveException {
         return ((ArrayAggregationBuffer) agg).array;
     }
