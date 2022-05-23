@@ -25,7 +25,6 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -79,8 +78,6 @@ public class TestArrayAverage {
     }
 
     abstract class AbstractEvaluator {
-        protected GenericUDAFEvaluator eval;
-
         protected PrimitiveTypeInfo inputPrimitiveType;
 
         protected PrimitiveObjectInspector inputElementOI;
@@ -92,22 +89,23 @@ public class TestArrayAverage {
         protected Object[] inputs;
         protected String[] outputs;
 
-        @BeforeAll
-        void createEvaluator() throws Exception {
+        GenericUDAFEvaluator createEvaluator() throws Exception {
+            inputOI = ObjectInspectorFactory.getStandardListObjectInspector(inputElementOI);
+            outputOI = ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
+
             TypeInfo[] parameters = new TypeInfo[] {
                     TypeInfoFactory.getListTypeInfo(inputPrimitiveType)
             };
-            eval = udaf.getEvaluator(parameters);
 
-            inputOI = ObjectInspectorFactory.getStandardListObjectInspector(inputElementOI);
-            outputOI = ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
+            return udaf.getEvaluator(parameters);
         }
 
         @Test
         void wrongListArgument() throws Exception {
+            GenericUDAFEvaluator eval = createEvaluator();
+
             PrimitiveObjectInspector wrongElementOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
-            ListObjectInspector wrongOI = ObjectInspectorFactory
-                    .getStandardListObjectInspector(wrongElementOI);
+            ListObjectInspector wrongOI = ObjectInspectorFactory.getStandardListObjectInspector(wrongElementOI);
 
             assertThrows(UDFArgumentTypeException.class,
                     () -> eval.init(GenericUDAFEvaluator.Mode.COMPLETE, new ObjectInspector[] {
@@ -116,17 +114,20 @@ public class TestArrayAverage {
         }
 
         @Test
-        void initEvaluator() throws Exception {
+        GenericUDAFEvaluator initEvaluator() throws Exception {
+            GenericUDAFEvaluator eval = createEvaluator();
             ObjectInspector returnOI = eval.init(GenericUDAFEvaluator.Mode.COMPLETE, new ObjectInspector[] {
                     inputOI
             });
 
             assertEquals(outputOI, returnOI);
+
+            return eval;
         }
 
         @Test
         void testLengthMismatch() throws Exception {
-            initEvaluator();
+            GenericUDAFEvaluator eval = initEvaluator();
             AbstractAggregationBuffer agg = (AbstractAggregationBuffer) eval.getNewAggregationBuffer();
 
             Object[] inputs = new Object[] {
@@ -148,8 +149,8 @@ public class TestArrayAverage {
 
         @Test
         void testIterate() throws Exception {
-            ArrayAverageAggregationBuffer agg = (ArrayAverageAggregationBuffer) eval
-                    .getNewAggregationBuffer();
+            GenericUDAFEvaluator eval = initEvaluator();
+            ArrayAverageAggregationBuffer agg = (ArrayAverageAggregationBuffer) eval.getNewAggregationBuffer();
 
             for (int i = 0; i < inputs.length; i++) {
                 eval.iterate(agg, new Object[] {
@@ -162,12 +163,10 @@ public class TestArrayAverage {
 
         /*@Test
         void testMerge() throws Exception {
-            initEvaluator();
+            GenericUDAFEvaluator eval = initEvaluator();
         
-            @SuppressWarnings("rawtypes")
-            ArrayAggregationBuffer agg1 = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
-            @SuppressWarnings("rawtypes")
-            ArrayAggregationBuffer agg2 = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
+            ArrayAverageAggregationBuffer agg1 = (ArrayAverageAggregationBuffer) eval.getNewAggregationBuffer();
+            ArrayAverageAggregationBuffer agg2 = (ArrayAverageAggregationBuffer) eval.getNewAggregationBuffer();
         
             for (int i = 0; i < inputs.length; i++) {
                 eval.iterate(agg1, new Object[] {
@@ -180,8 +179,8 @@ public class TestArrayAverage {
             eval.merge(agg2, null); // Must not throw any exception
             eval.merge(agg2, partial);
         
-            assertEquals(agg2.array.toString(), agg1.array.toString());
-            assertEquals(agg2.array.toString(), outputs[outputs.length - 1]);
+            assertEquals(eval.terminate(agg1).toString(), eval.terminate(agg2).toString());
+            assertEquals(eval.terminate(agg2).toString(), outputs[outputs.length - 1]);
         }*/
     }
 

@@ -15,13 +15,12 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
@@ -210,11 +209,10 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
             for (int i = 0; i < array.size(); i++) {
                 Object element = array.get(i);
                 if (element != null) {
-                    Converter inputElementConverter = ObjectInspectorConverters.getConverter(inputElementOI,
-                            PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
-                    DoubleWritable other = (DoubleWritable) inputElementConverter.convert(element);
+                    double other = PrimitiveObjectInspectorUtils.getDouble(element, inputElementOI);
+                    
                     agg.count.get(i).set(agg.count.get(i).get() + 1);
-                    agg.sum.get(i).set(agg.sum.get(i).get() + other.get());
+                    agg.sum.get(i).set(agg.sum.get(i).get() + other);
                 }
             }
         }
@@ -229,6 +227,10 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
 
         @Override
         public void merge(AggregationBuffer buff, Object partial) throws HiveException {
+            if (partial == null) {
+                return;
+            }
+            
             ArrayAverageAggregationBuffer agg = (ArrayAverageAggregationBuffer) buff;
 
             @SuppressWarnings("unchecked")
