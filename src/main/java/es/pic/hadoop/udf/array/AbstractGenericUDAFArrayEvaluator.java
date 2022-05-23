@@ -67,9 +67,10 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
                     .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
             break;
         default:
-            throw new UDFArgumentTypeException(0, String.format(
-                    "Only arrays of integer or floating point numbers are accepted, but array<%s> was passed.",
-                    inputOI.getTypeName()));
+            throw new UDFArgumentTypeException(0,
+                    String.format(
+                            "Only arrays of integer or floating point numbers are accepted, but array<%s> was passed.",
+                            inputOI.getTypeName()));
         }
 
         return ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);

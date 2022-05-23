@@ -108,8 +108,7 @@ public class TestArrayCount {
         @Test
         void wrongListArgument() throws Exception {
             PrimitiveObjectInspector wrongElementOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
-            ListObjectInspector wrongOI = ObjectInspectorFactory
-                    .getStandardListObjectInspector(wrongElementOI);
+            ListObjectInspector wrongOI = ObjectInspectorFactory.getStandardListObjectInspector(wrongElementOI);
 
             assertThrows(UDFArgumentTypeException.class,
                     () -> eval.init(GenericUDAFEvaluator.Mode.COMPLETE, new ObjectInspector[] {

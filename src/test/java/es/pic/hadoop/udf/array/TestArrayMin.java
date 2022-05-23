@@ -109,8 +109,7 @@ public class TestArrayMin {
         @Test
         void wrongListArgument() throws Exception {
             PrimitiveObjectInspector wrongElementOI = PrimitiveObjectInspectorFactory.writableVoidObjectInspector;
-            ListObjectInspector wrongOI = ObjectInspectorFactory
-                    .getStandardListObjectInspector(wrongElementOI);
+            ListObjectInspector wrongOI = ObjectInspectorFactory.getStandardListObjectInspector(wrongElementOI);
 
             assertThrows(UDFArgumentTypeException.class,
                     () -> eval.init(GenericUDAFEvaluator.Mode.COMPLETE, new ObjectInspector[] {
@@ -162,6 +161,30 @@ public class TestArrayMin {
                 assertEquals(agg.array.toString(), outputs[i]);
             }
         }
+
+        /*@Test
+        void testMerge() throws Exception {
+            initEvaluator();
+
+            @SuppressWarnings("rawtypes")
+            ArrayAggregationBuffer agg1 = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
+            @SuppressWarnings("rawtypes")
+            ArrayAggregationBuffer agg2 = (ArrayAggregationBuffer) eval.getNewAggregationBuffer();
+
+            for (int i = 0; i < inputs.length; i++) {
+                eval.iterate(agg1, new Object[] {
+                        inputs[i]
+                });
+            }
+
+            Object partial = eval.terminatePartial(agg1);
+
+            eval.merge(agg2, null); // Must not throw any exception
+            eval.merge(agg2, partial);
+
+            assertEquals(agg2.array.toString(), agg1.array.toString());
+            assertEquals(agg2.array.toString(), outputs[outputs.length - 1]);
+        }*/
     }
 
     @Nested

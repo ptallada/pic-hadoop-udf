@@ -42,8 +42,7 @@ public class TestArrayAverage {
         @Test
         void isAllColumns() {
             ObjectInspector[] params = new ObjectInspector[0];
-            // SimpleGenericUDAFParameterInfo(ObjectInspector[] params, boolean isWindowing, boolean distinct,
-            // boolean allColumns)
+            // SimpleGenericUDAFParameterInfo(ObjectInspector[] params, boolean isWindowing, boolean distinct, boolean allColumns)
             GenericUDAFParameterInfo info = new SimpleGenericUDAFParameterInfo(params, false, false, true);
             assertThrows(SemanticException.class, () -> udaf.getEvaluator(info));
         }
@@ -51,8 +50,7 @@ public class TestArrayAverage {
         @Test
         void isDistinct() {
             ObjectInspector[] params = new ObjectInspector[0];
-            // SimpleGenericUDAFParameterInfo(ObjectInspector[] params, boolean isWindowing, boolean distinct,
-            // boolean allColumns)
+            // SimpleGenericUDAFParameterInfo(ObjectInspector[] params, boolean isWindowing, boolean distinct, boolean allColumns)
             GenericUDAFParameterInfo info = new SimpleGenericUDAFParameterInfo(params, false, true, false);
             assertThrows(SemanticException.class, () -> udaf.getEvaluator(info));
         }
