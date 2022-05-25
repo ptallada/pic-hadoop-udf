@@ -3,7 +3,6 @@ package es.pic.hadoop.udf.array;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -27,15 +26,10 @@ import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 
-// @formatter:off
-@Description(
-    name = "array_avg",
-    value = "_FUNC_(array<T>) -> array<T>",
-    extended = "Returns the average of a set of arrays."
-)
-// @formatter:on
 @SuppressWarnings("deprecation")
-public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
+public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFResolver {
+
+    protected abstract GenericUDAFEvaluator getEvaluatorInstance();
 
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
@@ -44,8 +38,8 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
         }
 
         if (parameters[0].getCategory() != ObjectInspector.Category.LIST) {
-            throw new UDFArgumentTypeException(0, String.format(
-                    "Only array arguments are accepted but %s was passed.", parameters[0].getTypeName()));
+            throw new UDFArgumentTypeException(0,
+                    String.format("Only array arguments are accepted but %s was passed.", parameters[0].getTypeName()));
         }
 
         ListTypeInfo listTI = (ListTypeInfo) parameters[0];
@@ -59,14 +53,15 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
             case LONG:
             case FLOAT:
             case DOUBLE:
-                return new UDAFArrayAverageEvaluator();
+                return getEvaluatorInstance();
             default:
                 break;
             }
         }
-        throw new UDFArgumentTypeException(0, String.format(
-                "Only arrays of integer or floating point numbers are accepted but, array<%s> was passed.",
-                elementTI.getTypeName()));
+        throw new UDFArgumentTypeException(0,
+                String.format(
+                        "Only arrays of integer or floating point numbers are accepted but, array<%s> was passed.",
+                        elementTI.getTypeName()));
     }
 
     @Override
@@ -77,7 +72,7 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
 
         TypeInfo[] parameters = info.getParameters();
 
-        UDAFArrayAverageEvaluator eval = (UDAFArrayAverageEvaluator) getEvaluator(parameters);
+        AbstractGenericUDAFArrayDispersionEvaluator eval = (AbstractGenericUDAFArrayDispersionEvaluator) getEvaluator(parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());
@@ -87,11 +82,12 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
     }
 
     @UDFType(commutative = true)
-    public static class UDAFArrayAverageEvaluator extends GenericUDAFEvaluator {
+    public abstract static class AbstractGenericUDAFArrayDispersionEvaluator extends GenericUDAFEvaluator {
 
-        class ArrayAverageAggregationBuffer extends AbstractAggregationBuffer {
+        class ArrayVarianceAggregationBuffer extends AbstractAggregationBuffer {
             ArrayList<LongWritable> count;
             ArrayList<DoubleWritable> sum;
+            ArrayList<DoubleWritable> var;
         }
 
         protected ListObjectInspector inputOI;
@@ -100,6 +96,7 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
         protected StructObjectInspector partialOI;
         protected StructField countField;
         protected StructField sumField;
+        protected StructField varField;
 
         protected boolean isAllColumns;
         protected boolean isDistinct;
@@ -119,20 +116,21 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
-            if (parameters.length != 1) {
-                throw new UDFArgumentLengthException(
-                        String.format("A single parameter was expected, got %d instead.", parameters.length));
-            }
+            assert (parameters.length == 1);
+            super.init(m, parameters);
 
             // partial OI
             ArrayList<ObjectInspector> foi = new ArrayList<ObjectInspector>();
-            foi.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableLongObjectInspector)); // count
-            foi.add(ObjectInspectorFactory.getStandardListObjectInspector(
-                    PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // sum
+            foi.add(ObjectInspectorFactory
+                    .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector)); // count
+            foi.add(ObjectInspectorFactory
+                    .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // sum
+            foi.add(ObjectInspectorFactory
+                    .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // var
             ArrayList<String> fname = new ArrayList<String>();
             fname.add("count");
             fname.add("sum");
+            fname.add("var");
             partialOI = ObjectInspectorFactory.getStandardStructObjectInspector(fname, foi);
 
             // input
@@ -157,42 +155,46 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
                 StructObjectInspector soi = (StructObjectInspector) parameters[0];
                 countField = soi.getStructFieldRef("count");
                 sumField = soi.getStructFieldRef("sum");
+                varField = soi.getStructFieldRef("var");
             }
 
             // output
             if (m == Mode.PARTIAL1 || m == Mode.PARTIAL2) { // terminatePartial() will be called
                 return partialOI;
             } else { // FINAL, COMPLETE ==> terminate() will be called()
-                return ObjectInspectorFactory.getStandardListObjectInspector(
-                        PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
+                return ObjectInspectorFactory
+                        .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
             }
         }
 
         @Override
         public AggregationBuffer getNewAggregationBuffer() throws HiveException {
-            return new ArrayAverageAggregationBuffer();
+            return new ArrayVarianceAggregationBuffer();
         }
 
         @Override
         public void reset(AggregationBuffer agg) throws HiveException {
-            ((ArrayAverageAggregationBuffer) agg).count = null;
-            ((ArrayAverageAggregationBuffer) agg).sum = null;
+            ((ArrayVarianceAggregationBuffer) agg).count = null;
+            ((ArrayVarianceAggregationBuffer) agg).sum = null;
+            ((ArrayVarianceAggregationBuffer) agg).var = null;
         }
 
-        protected void initAgg(ArrayAverageAggregationBuffer agg, List<?> array) throws HiveException {
+        protected void initAgg(ArrayVarianceAggregationBuffer agg, List<?> array) throws HiveException {
             if (array == null) {
                 return;
             } else if ((agg.count != null) && (agg.count.size() != array.size())) {
-                throw new UDFArgumentException(String.format("Arrays must have equal sizes, %d != %d.",
-                        agg.count.size(), array.size()));
+                throw new UDFArgumentException(
+                        String.format("Arrays must have equal sizes, %d != %d.", agg.count.size(), array.size()));
             }
 
             if (agg.count == null) {
                 agg.count = new ArrayList<LongWritable>(array.size());
                 agg.sum = new ArrayList<DoubleWritable>(array.size());
+                agg.var = new ArrayList<DoubleWritable>(array.size());
                 for (int i = 0; i < array.size(); i++) {
                     agg.count.add(new LongWritable(0));
                     agg.sum.add(new DoubleWritable(0));
+                    agg.var.add(new DoubleWritable(0));
                 }
             }
         }
@@ -204,7 +206,7 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
             }
 
             List<?> array = inputOI.getList(parameters[0]);
-            ArrayAverageAggregationBuffer agg = (ArrayAverageAggregationBuffer) buff;
+            ArrayVarianceAggregationBuffer agg = (ArrayVarianceAggregationBuffer) buff;
 
             initAgg(agg, array);
 
@@ -212,18 +214,28 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
                 Object element = array.get(i);
                 if (element != null) {
                     double other = PrimitiveObjectInspectorUtils.getDouble(element, inputElementOI);
-                    
-                    agg.count.get(i).set(agg.count.get(i).get() + 1);
-                    agg.sum.get(i).set(agg.sum.get(i).get() + other);
+
+                    LongWritable count = agg.count.get(i);
+                    DoubleWritable sum = agg.sum.get(i);
+                    DoubleWritable var = agg.var.get(i);
+
+                    count.set(count.get() + 1);
+                    sum.set(sum.get() + other);
+
+                    if (count.get() > 1) {
+                        double t = count.get() * other - sum.get();
+                        var.set(var.get() + (t * t) / (count.get() * (count.get() - 1)));
+                    }
                 }
             }
         }
 
         @Override
         public Object terminatePartial(AggregationBuffer agg) throws HiveException {
-            Object[] partialResult = new Object[2];
-            partialResult[0] = ((ArrayAverageAggregationBuffer) agg).count;
-            partialResult[1] = ((ArrayAverageAggregationBuffer) agg).sum;
+            Object[] partialResult = new Object[3];
+            partialResult[0] = ((ArrayVarianceAggregationBuffer) agg).count;
+            partialResult[1] = ((ArrayVarianceAggregationBuffer) agg).sum;
+            partialResult[2] = ((ArrayVarianceAggregationBuffer) agg).var;
             return partialResult;
         }
 
@@ -232,36 +244,52 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
             if (partial == null) {
                 return;
             }
-            
-            ArrayAverageAggregationBuffer agg = (ArrayAverageAggregationBuffer) buff;
+
+            ArrayVarianceAggregationBuffer agg = (ArrayVarianceAggregationBuffer) buff;
 
             @SuppressWarnings("unchecked")
-            List<LongWritable> partial_count = (List<LongWritable>) partialOI.getStructFieldData(partial,
-                    countField);
+            List<LongWritable> partial_count = (List<LongWritable>) partialOI.getStructFieldData(partial, countField);
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> partial_sum = (List<DoubleWritable>) partialOI.getStructFieldData(partial,
-                    sumField);
+            List<DoubleWritable> partial_sum = (List<DoubleWritable>) partialOI.getStructFieldData(partial, sumField);
+            @SuppressWarnings("unchecked")
+            List<DoubleWritable> partial_var = (List<DoubleWritable>) partialOI.getStructFieldData(partial, varField);
 
             if (partial_count == null) {
                 return;
             } else if (agg.count == null) {
                 agg.count = new ArrayList<LongWritable>(partial_count);
                 agg.sum = new ArrayList<DoubleWritable>(partial_sum);
+                agg.var = new ArrayList<DoubleWritable>(partial_var);
             } else {
                 for (int i = 0; i < partial_count.size(); i++) {
                     LongWritable count = agg.count.get(i);
                     DoubleWritable sum = agg.sum.get(i);
+                    DoubleWritable var = agg.var.get(i);
 
-                    count.set(count.get() + partial_count.get(i).get());
-                    sum.set(sum.get() + partial_sum.get(i).get());
+                    long other_count = partial_count.get(i).get();
+                    double other_sum = partial_sum.get(i).get();
+                    double other_var = partial_var.get(i).get();
+
+                    if ((count.get() > 0) && (other_count > 0)) {
+                        double t = (other_count / count.get()) * sum.get() - other_sum;
+                        var.set(var.get() + other_var
+                                + ((count.get() / other_count) / (count.get() + other_count)) * t * t);
+                    } else if (count.get() == 0) {
+                        var.set(other_var);
+                    }
+
+                    count.set(count.get() + other_count);
+                    sum.set(sum.get() + other_sum);
                 }
             }
         }
 
+        public abstract double calculateVarianceResult(double variance, long count);
+        
         @Override
         public Object terminate(AggregationBuffer buff) throws HiveException {
-            ArrayList<DoubleWritable> avg = new ArrayList<DoubleWritable>();
-            ArrayAverageAggregationBuffer agg = (ArrayAverageAggregationBuffer) buff;
+            ArrayList<DoubleWritable> res = new ArrayList<DoubleWritable>();
+            ArrayVarianceAggregationBuffer agg = (ArrayVarianceAggregationBuffer) buff;
 
             if (agg.count == null) {
                 return null;
@@ -269,15 +297,16 @@ public class UDAFArrayAverage extends AbstractGenericUDAFResolver {
 
             for (int i = 0; i < agg.count.size(); i++) {
                 LongWritable count = agg.count.get(i);
-                DoubleWritable sum = agg.sum.get(i);
+                DoubleWritable var = agg.var.get(i);
                 if (count.get() == 0) {
-                    avg.add(null);
+                    res.add(null);
+                } else if (count.get() == 1) {
+                    res.add(new DoubleWritable(0));
                 } else {
-                    avg.add(new DoubleWritable(sum.get() / count.get()));
+                    res.add(new DoubleWritable(calculateVarianceResult(var.get(), count.get())));
                 }
             }
-
-            return avg;
+            return res;
         }
     }
 }

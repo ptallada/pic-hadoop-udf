@@ -5,16 +5,13 @@ import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
-import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.Writable;
 
 public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> extends GenericUDAFEvaluator {
@@ -46,35 +43,7 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
     }
 
     @Override
-    public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
-        assert (parameters.length == 1);
-        super.init(m, parameters);
-
-        inputOI = (ListObjectInspector) parameters[0];
-        inputElementOI = (PrimitiveObjectInspector) inputOI.getListElementObjectInspector();
-
-        switch (inputElementOI.getPrimitiveCategory()) {
-        case BYTE:
-        case SHORT:
-        case INT:
-        case LONG:
-            outputElementOI = PrimitiveObjectInspectorFactory
-                    .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
-            break;
-        case FLOAT:
-        case DOUBLE:
-            outputElementOI = PrimitiveObjectInspectorFactory
-                    .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
-            break;
-        default:
-            throw new UDFArgumentTypeException(0,
-                    String.format(
-                            "Only arrays of integer or floating point numbers are accepted, but array<%s> was passed.",
-                            inputOI.getTypeName()));
-        }
-
-        return ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
-    }
+    public abstract ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException;
 
     @Override
     public AbstractAggregationBuffer getNewAggregationBuffer() throws HiveException {
@@ -110,7 +79,8 @@ public abstract class AbstractGenericUDAFArrayEvaluator<T extends Writable> exte
     @SuppressWarnings("deprecation")
     public void iterate(AggregationBuffer buff, Object[] parameters) throws HiveException {
         if (parameters.length != 1) {
-            throw new UDFArgumentLengthException("This function takes exactly one argument: array");
+            throw new UDFArgumentLengthException(
+                    String.format("A single parameter was expected, got %d instead.", parameters.length));
         }
 
         @SuppressWarnings("unchecked")

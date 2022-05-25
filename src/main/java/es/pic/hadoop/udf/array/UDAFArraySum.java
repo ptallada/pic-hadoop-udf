@@ -34,12 +34,12 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
         if (parameters.length != 1) {
-            throw new UDFArgumentLengthException("This function takes exactly one argument: array");
+            throw new UDFArgumentLengthException(String.format("A single parameter was expected, got %d instead.", parameters.length));
         }
 
         if (parameters[0].getCategory() != ObjectInspector.Category.LIST) {
-            throw new UDFArgumentTypeException(0, String.format(
-                    "Only array arguments are accepted but %s was passed.", parameters[0].getTypeName()));
+            throw new UDFArgumentTypeException(0,
+                    String.format("Only array arguments are accepted but %s was passed.", parameters[0].getTypeName()));
         }
 
         ListTypeInfo listTI = (ListTypeInfo) parameters[0];
@@ -59,9 +59,10 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
                 break;
             }
         }
-        throw new UDFArgumentTypeException(0, String.format(
-                "Only arrays of integer or floating point numbers are accepted but, array<%s> was passed.",
-                elementTI.getTypeName()));
+        throw new UDFArgumentTypeException(0,
+                String.format(
+                        "Only arrays of integer or floating point numbers are accepted but, array<%s> was passed.",
+                        elementTI.getTypeName()));
     }
 
     @Override
@@ -73,8 +74,7 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
         TypeInfo[] parameters = info.getParameters();
 
         @SuppressWarnings("unchecked")
-        GenericUDAFArraySumEvaluator<Writable> eval = (GenericUDAFArraySumEvaluator<Writable>) getEvaluator(
-                parameters);
+        GenericUDAFArraySumEvaluator<Writable> eval = (GenericUDAFArraySumEvaluator<Writable>) getEvaluator(parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());
@@ -89,7 +89,10 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
-            super.init(m, parameters);
+            if (parameters.length != 1) {
+                throw new UDFArgumentLengthException(
+                        String.format("A single parameter was expected, got %d instead.", parameters.length));
+            }
 
             inputOI = (ListObjectInspector) parameters[0];
             inputElementOI = (PrimitiveObjectInspector) inputOI.getListElementObjectInspector();
@@ -104,8 +107,8 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
                 break;
             case FLOAT:
             case DOUBLE:
-                outputElementOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(
-                        PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
+                outputElementOI = PrimitiveObjectInspectorFactory
+                        .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
                 break;
             default:
                 throw new UDFArgumentTypeException(0, String.format(

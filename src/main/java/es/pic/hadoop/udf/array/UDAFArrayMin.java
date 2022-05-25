@@ -38,7 +38,7 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
         if (parameters.length != 1) {
-            throw new UDFArgumentLengthException("This function takes exactly one argument: array");
+            throw new UDFArgumentLengthException(String.format("A single parameter was expected, got %d instead.", parameters.length));
         }
 
         if (parameters[0].getCategory() != ObjectInspector.Category.LIST) {
@@ -81,8 +81,7 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
         TypeInfo[] parameters = info.getParameters();
 
         @SuppressWarnings("unchecked")
-        GenericUDAFArrayMinEvaluator<Writable> eval = (GenericUDAFArrayMinEvaluator<Writable>) getEvaluator(
-                parameters);
+        GenericUDAFArrayMinEvaluator<Writable> eval = (GenericUDAFArrayMinEvaluator<Writable>) getEvaluator(parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());
@@ -97,7 +96,10 @@ public class UDAFArrayMin extends AbstractGenericUDAFResolver {
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
-            super.init(m, parameters);
+            if (parameters.length != 1) {
+                throw new UDFArgumentLengthException(
+                        String.format("A single parameter was expected, got %d instead.", parameters.length));
+            }
 
             inputOI = (ListObjectInspector) parameters[0];
             inputElementOI = (PrimitiveObjectInspector) inputOI.getListElementObjectInspector();

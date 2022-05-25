@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
+import es.pic.hadoop.udf.array.AbstractUDAFArrayDispersion.AbstractGenericUDAFArrayDispersionEvaluator.ArrayVarianceAggregationBuffer;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestArrayStdSample {
 
