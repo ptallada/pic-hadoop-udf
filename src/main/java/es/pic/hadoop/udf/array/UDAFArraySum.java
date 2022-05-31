@@ -4,19 +4,14 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
-import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.typeinfo.ListTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
-import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
@@ -28,59 +23,22 @@ import org.apache.hadoop.io.Writable;
     extended = "Returns the sum of a set of arrays."
 )
 // @formatter:on
-@SuppressWarnings("deprecation")
-public class UDAFArraySum extends AbstractGenericUDAFResolver {
+public class UDAFArraySum extends AbstractUDAFArrayResolver {
 
     @Override
-    public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
-        if (parameters.length != 1) {
-            throw new UDFArgumentLengthException(String.format("A single parameter was expected, got %d instead.", parameters.length));
+    protected GenericUDAFEvaluator getEvaluatorInstance(PrimitiveCategory category) {
+        switch (category) {
+        case BYTE:
+        case SHORT:
+        case INT:
+        case LONG:
+            return new UDAFArrayLongSumEvaluator();
+        case FLOAT:
+        case DOUBLE:
+            return new UDAFArrayDoubleSumEvaluator();
+        default:
+            return null;
         }
-
-        if (parameters[0].getCategory() != ObjectInspector.Category.LIST) {
-            throw new UDFArgumentTypeException(0,
-                    String.format("Only array arguments are accepted but %s was passed.", parameters[0].getTypeName()));
-        }
-
-        ListTypeInfo listTI = (ListTypeInfo) parameters[0];
-        TypeInfo elementTI = listTI.getListElementTypeInfo();
-
-        if (listTI.getListElementTypeInfo().getCategory() == ObjectInspector.Category.PRIMITIVE) {
-            switch (((PrimitiveTypeInfo) elementTI).getPrimitiveCategory()) {
-            case BYTE:
-            case SHORT:
-            case INT:
-            case LONG:
-                return new UDAFArrayLongSumEvaluator();
-            case FLOAT:
-            case DOUBLE:
-                return new UDAFArrayDoubleSumEvaluator();
-            default:
-                break;
-            }
-        }
-        throw new UDFArgumentTypeException(0,
-                String.format(
-                        "Only arrays of integer or floating point numbers are accepted but, array<%s> was passed.",
-                        elementTI.getTypeName()));
-    }
-
-    @Override
-    public GenericUDAFEvaluator getEvaluator(GenericUDAFParameterInfo info) throws SemanticException {
-        if (info.isAllColumns() || info.isDistinct()) {
-            throw new SemanticException("The specified syntax for UDAF invocation is invalid.");
-        }
-
-        TypeInfo[] parameters = info.getParameters();
-
-        @SuppressWarnings("unchecked")
-        GenericUDAFArraySumEvaluator<Writable> eval = (GenericUDAFArraySumEvaluator<Writable>) getEvaluator(parameters);
-
-        eval.setIsAllColumns(info.isAllColumns());
-        eval.setWindowing(info.isWindowing());
-        eval.setIsDistinct(info.isDistinct());
-
-        return eval;
     }
 
     @UDFType(commutative = true)
@@ -102,13 +60,11 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
             case SHORT:
             case INT:
             case LONG:
-                outputElementOI = PrimitiveObjectInspectorFactory
-                        .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+                outputElementOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
                 break;
             case FLOAT:
             case DOUBLE:
-                outputElementOI = PrimitiveObjectInspectorFactory
-                        .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
+                outputElementOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
                 break;
             default:
                 throw new UDFArgumentTypeException(0, String.format(
@@ -116,7 +72,7 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
                         inputOI.getTypeName()));
             }
 
-            return ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
+            return outputOI = ObjectInspectorFactory.getStandardListObjectInspector(outputElementOI);
         }
     }
 
@@ -124,7 +80,7 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
         @Override
         protected LongWritable doIterate(LongWritable self, LongWritable other) {
             if (self == null) {
-                return other;
+                return new LongWritable(other.get());
             } else {
                 return new LongWritable(self.get() + other.get());
             }
@@ -135,7 +91,7 @@ public class UDAFArraySum extends AbstractGenericUDAFResolver {
         @Override
         protected DoubleWritable doIterate(DoubleWritable self, DoubleWritable other) {
             if (self == null) {
-                return other;
+                return new DoubleWritable(other.get());
             } else {
                 return new DoubleWritable(self.get() + other.get());
             }

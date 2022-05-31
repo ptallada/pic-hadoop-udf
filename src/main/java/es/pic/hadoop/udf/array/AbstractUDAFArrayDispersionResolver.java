@@ -3,6 +3,8 @@ package es.pic.hadoop.udf.array;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.rits.cloning.Cloner;
+
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -27,14 +29,15 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
 
 @SuppressWarnings("deprecation")
-public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFResolver {
+public abstract class AbstractUDAFArrayDispersionResolver extends AbstractGenericUDAFResolver {
 
     protected abstract GenericUDAFEvaluator getEvaluatorInstance();
 
     @Override
     public GenericUDAFEvaluator getEvaluator(TypeInfo[] parameters) throws SemanticException {
         if (parameters.length != 1) {
-            throw new UDFArgumentLengthException(String.format("A single parameter was expected, got %d instead.", parameters.length));
+            throw new UDFArgumentLengthException(
+                    String.format("A single parameter was expected, got %d instead.", parameters.length));
         }
 
         if (parameters[0].getCategory() != ObjectInspector.Category.LIST) {
@@ -72,7 +75,8 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
 
         TypeInfo[] parameters = info.getParameters();
 
-        AbstractGenericUDAFArrayDispersionEvaluator eval = (AbstractGenericUDAFArrayDispersionEvaluator) getEvaluator(parameters);
+        AbstractGenericUDAFArrayDispersionEvaluator eval = (AbstractGenericUDAFArrayDispersionEvaluator) getEvaluator(
+                parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
         eval.setWindowing(info.isWindowing());
@@ -84,7 +88,7 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
     @UDFType(commutative = true)
     public abstract static class AbstractGenericUDAFArrayDispersionEvaluator extends GenericUDAFEvaluator {
 
-        class ArrayVarianceAggregationBuffer extends AbstractAggregationBuffer {
+        class ArrayDispersionAggregationBuffer extends AbstractAggregationBuffer {
             ArrayList<LongWritable> count;
             ArrayList<DoubleWritable> sum;
             ArrayList<DoubleWritable> var;
@@ -116,7 +120,10 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
-            assert (parameters.length == 1);
+            if (parameters.length != 1) {
+                throw new UDFArgumentLengthException(
+                        String.format("A single parameter was expected, got %d instead.", parameters.length));
+            }
             super.init(m, parameters);
 
             // partial OI
@@ -169,29 +176,27 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
 
         @Override
         public AggregationBuffer getNewAggregationBuffer() throws HiveException {
-            return new ArrayVarianceAggregationBuffer();
+            return new ArrayDispersionAggregationBuffer();
         }
 
         @Override
         public void reset(AggregationBuffer agg) throws HiveException {
-            ((ArrayVarianceAggregationBuffer) agg).count = null;
-            ((ArrayVarianceAggregationBuffer) agg).sum = null;
-            ((ArrayVarianceAggregationBuffer) agg).var = null;
+            ((ArrayDispersionAggregationBuffer) agg).count = null;
+            ((ArrayDispersionAggregationBuffer) agg).sum = null;
+            ((ArrayDispersionAggregationBuffer) agg).var = null;
         }
 
-        protected void initAgg(ArrayVarianceAggregationBuffer agg, List<?> array) throws HiveException {
-            if (array == null) {
-                return;
-            } else if ((agg.count != null) && (agg.count.size() != array.size())) {
+        protected void initAgg(ArrayDispersionAggregationBuffer agg, int size) throws HiveException {
+            if ((agg.count != null) && (agg.count.size() != size)) {
                 throw new UDFArgumentException(
-                        String.format("Arrays must have equal sizes, %d != %d.", agg.count.size(), array.size()));
+                        String.format("Arrays must have equal sizes, %d != %d.", agg.count.size(), size));
             }
 
             if (agg.count == null) {
-                agg.count = new ArrayList<LongWritable>(array.size());
-                agg.sum = new ArrayList<DoubleWritable>(array.size());
-                agg.var = new ArrayList<DoubleWritable>(array.size());
-                for (int i = 0; i < array.size(); i++) {
+                agg.count = new ArrayList<LongWritable>(size);
+                agg.sum = new ArrayList<DoubleWritable>(size);
+                agg.var = new ArrayList<DoubleWritable>(size);
+                for (int i = 0; i < size; i++) {
                     agg.count.add(new LongWritable(0));
                     agg.sum.add(new DoubleWritable(0));
                     agg.var.add(new DoubleWritable(0));
@@ -202,13 +207,18 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
         @Override
         public void iterate(AggregationBuffer buff, Object[] parameters) throws HiveException {
             if (parameters.length != 1) {
-                throw new UDFArgumentLengthException(String.format("A single parameter was expected, got %d instead.", parameters.length));
+                throw new UDFArgumentLengthException(
+                        String.format("A single parameter was expected, got %d instead.", parameters.length));
             }
 
             List<?> array = inputOI.getList(parameters[0]);
-            ArrayVarianceAggregationBuffer agg = (ArrayVarianceAggregationBuffer) buff;
+            ArrayDispersionAggregationBuffer agg = (ArrayDispersionAggregationBuffer) buff;
 
-            initAgg(agg, array);
+            if (array == null) {
+                return;
+            }
+
+            initAgg(agg, array.size());
 
             for (int i = 0; i < array.size(); i++) {
                 Object element = array.get(i);
@@ -231,12 +241,29 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
         }
 
         @Override
-        public Object terminatePartial(AggregationBuffer agg) throws HiveException {
-            Object[] partialResult = new Object[3];
-            partialResult[0] = ((ArrayVarianceAggregationBuffer) agg).count;
-            partialResult[1] = ((ArrayVarianceAggregationBuffer) agg).sum;
-            partialResult[2] = ((ArrayVarianceAggregationBuffer) agg).var;
-            return partialResult;
+        public Object terminatePartial(AggregationBuffer buff) throws HiveException {
+            ArrayDispersionAggregationBuffer agg = (ArrayDispersionAggregationBuffer) buff;
+
+            if (agg.count == null) {
+                return new Object[] {
+                        null, null, null // count, sum, var
+                };
+            } else {
+                // Need to deep copy Writable counters
+                ArrayList<LongWritable> count = new ArrayList<LongWritable>(agg.count.size());
+                ArrayList<DoubleWritable> sum = new ArrayList<DoubleWritable>(agg.sum.size());
+                ArrayList<DoubleWritable> var = new ArrayList<DoubleWritable>(agg.var.size());
+
+                for (int i = 0; i < agg.count.size(); i++) {
+                    count.add(new LongWritable(agg.count.get(i).get()));
+                    sum.add(new DoubleWritable(agg.sum.get(i).get()));
+                    var.add(new DoubleWritable(agg.var.get(i).get()));
+                }
+
+                return new Object[] {
+                        count, sum, var
+                };
+            }
         }
 
         @Override
@@ -245,7 +272,7 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
                 return;
             }
 
-            ArrayVarianceAggregationBuffer agg = (ArrayVarianceAggregationBuffer) buff;
+            ArrayDispersionAggregationBuffer agg = (ArrayDispersionAggregationBuffer) buff;
 
             @SuppressWarnings("unchecked")
             List<LongWritable> partial_count = (List<LongWritable>) partialOI.getStructFieldData(partial, countField);
@@ -257,9 +284,11 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
             if (partial_count == null) {
                 return;
             } else if (agg.count == null) {
-                agg.count = new ArrayList<LongWritable>(partial_count);
-                agg.sum = new ArrayList<DoubleWritable>(partial_sum);
-                agg.var = new ArrayList<DoubleWritable>(partial_var);
+                Cloner cloner = new Cloner();
+
+                agg.count = new ArrayList<LongWritable>(cloner.deepClone(partial_count));
+                agg.sum = new ArrayList<DoubleWritable>(cloner.deepClone(partial_sum));
+                agg.var = new ArrayList<DoubleWritable>(cloner.deepClone(partial_var));
             } else {
                 for (int i = 0; i < partial_count.size(); i++) {
                     LongWritable count = agg.count.get(i);
@@ -284,12 +313,12 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
             }
         }
 
-        public abstract double calculateVarianceResult(double variance, long count);
-        
+        public abstract double calculateResult(long count, double sum, double variance);
+
         @Override
         public Object terminate(AggregationBuffer buff) throws HiveException {
             ArrayList<DoubleWritable> res = new ArrayList<DoubleWritable>();
-            ArrayVarianceAggregationBuffer agg = (ArrayVarianceAggregationBuffer) buff;
+            ArrayDispersionAggregationBuffer agg = (ArrayDispersionAggregationBuffer) buff;
 
             if (agg.count == null) {
                 return null;
@@ -297,13 +326,13 @@ public abstract class AbstractUDAFArrayDispersion extends AbstractGenericUDAFRes
 
             for (int i = 0; i < agg.count.size(); i++) {
                 LongWritable count = agg.count.get(i);
+                DoubleWritable sum = agg.sum.get(i);
                 DoubleWritable var = agg.var.get(i);
+
                 if (count.get() == 0) {
                     res.add(null);
-                } else if (count.get() == 1) {
-                    res.add(new DoubleWritable(0));
                 } else {
-                    res.add(new DoubleWritable(calculateVarianceResult(var.get(), count.get())));
+                    res.add(new DoubleWritable(calculateResult(count.get(), sum.get(), var.get())));
                 }
             }
             return res;

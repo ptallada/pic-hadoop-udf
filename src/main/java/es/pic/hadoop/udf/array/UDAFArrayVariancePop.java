@@ -11,7 +11,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
     extended = "Returns the population variance of a set of arrays."
 )
 // @formatter:on
-public class UDAFArrayVariancePop extends AbstractUDAFArrayDispersion {
+public class UDAFArrayVariancePop extends AbstractUDAFArrayDispersionResolver {
 
     @Override
     protected GenericUDAFEvaluator getEvaluatorInstance() {
@@ -20,8 +20,12 @@ public class UDAFArrayVariancePop extends AbstractUDAFArrayDispersion {
 
     @UDFType(commutative = true)
     public static class UDAFArrayVariancePopEvaluator extends AbstractGenericUDAFArrayDispersionEvaluator {
-        public double calculateVarianceResult(double variance, long count) {
-            return variance / count;
+        public double calculateResult(long count, double sum, double variance) {
+            if (count == 1) {
+                return 0;
+            } else {
+                return variance / count;
+            }
         }
     }
 }
