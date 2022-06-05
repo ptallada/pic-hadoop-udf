@@ -11,6 +11,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector.PrimitiveCategory;
+import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -54,6 +55,8 @@ public class UDAFArrayMin extends AbstractUDAFArrayResolver {
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
+            super.init(m, parameters);
+
             if (parameters.length != 1) {
                 throw new UDFArgumentLengthException(
                         String.format("A single parameter was expected, got %d instead.", parameters.length));
@@ -69,7 +72,8 @@ public class UDAFArrayMin extends AbstractUDAFArrayResolver {
             case LONG:
             case FLOAT:
             case DOUBLE:
-                outputElementOI = inputElementOI;
+                outputElementOI = PrimitiveObjectInspectorFactory
+                        .getPrimitiveWritableObjectInspector(inputElementOI.getPrimitiveCategory());
                 break;
             default:
                 throw new UDFArgumentTypeException(0, String.format(

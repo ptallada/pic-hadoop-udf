@@ -101,6 +101,9 @@ public abstract class AbstractUDAFArrayDispersionResolver extends AbstractGeneri
         protected StructField countField;
         protected StructField sumField;
         protected StructField varField;
+        protected ListObjectInspector countFieldOI;
+        protected ListObjectInspector sumFieldOI;
+        protected ListObjectInspector varFieldOI;
 
         protected boolean isAllColumns;
         protected boolean isDistinct;
@@ -120,25 +123,12 @@ public abstract class AbstractUDAFArrayDispersionResolver extends AbstractGeneri
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
+            super.init(m, parameters);
+
             if (parameters.length != 1) {
                 throw new UDFArgumentLengthException(
                         String.format("A single parameter was expected, got %d instead.", parameters.length));
             }
-            super.init(m, parameters);
-
-            // partial OI
-            ArrayList<ObjectInspector> foi = new ArrayList<ObjectInspector>();
-            foi.add(ObjectInspectorFactory
-                    .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector)); // count
-            foi.add(ObjectInspectorFactory
-                    .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // sum
-            foi.add(ObjectInspectorFactory
-                    .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // var
-            ArrayList<String> fname = new ArrayList<String>();
-            fname.add("count");
-            fname.add("sum");
-            fname.add("var");
-            partialOI = ObjectInspectorFactory.getStandardStructObjectInspector(fname, foi);
 
             // input
             if (m == Mode.PARTIAL1 || m == Mode.COMPLETE) { // iterate() will be called
@@ -159,15 +149,30 @@ public abstract class AbstractUDAFArrayDispersionResolver extends AbstractGeneri
                             inputElementOI.getTypeName()));
                 }
             } else { // PARTIAL2, FINAL ==> merge() will be called
-                StructObjectInspector soi = (StructObjectInspector) parameters[0];
-                countField = soi.getStructFieldRef("count");
-                sumField = soi.getStructFieldRef("sum");
-                varField = soi.getStructFieldRef("var");
+                partialOI = (StructObjectInspector) parameters[0];
+                List<? extends StructField> fields = partialOI.getAllStructFieldRefs();
+                countField = fields.get(0);
+                sumField = fields.get(1);
+                varField = fields.get(2);
+                countFieldOI = (ListObjectInspector) countField.getFieldObjectInspector();
+                sumFieldOI = (ListObjectInspector) sumField.getFieldObjectInspector();
+                varFieldOI = (ListObjectInspector) varField.getFieldObjectInspector();
             }
 
             // output
             if (m == Mode.PARTIAL1 || m == Mode.PARTIAL2) { // terminatePartial() will be called
-                return partialOI;
+                ArrayList<ObjectInspector> foi = new ArrayList<ObjectInspector>();
+                foi.add(ObjectInspectorFactory
+                        .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableLongObjectInspector)); // count
+                foi.add(ObjectInspectorFactory
+                        .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // sum
+                foi.add(ObjectInspectorFactory
+                        .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector)); // var
+                ArrayList<String> fname = new ArrayList<String>();
+                fname.add("count");
+                fname.add("sum");
+                fname.add("var");
+                return ObjectInspectorFactory.getStandardStructObjectInspector(fname, foi);
             } else { // FINAL, COMPLETE ==> terminate() will be called()
                 return ObjectInspectorFactory
                         .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
@@ -275,11 +280,14 @@ public abstract class AbstractUDAFArrayDispersionResolver extends AbstractGeneri
             ArrayDispersionAggregationBuffer agg = (ArrayDispersionAggregationBuffer) buff;
 
             @SuppressWarnings("unchecked")
-            List<LongWritable> partial_count = (List<LongWritable>) partialOI.getStructFieldData(partial, countField);
+            List<LongWritable> partial_count = (List<LongWritable>) countFieldOI
+                    .getList(partialOI.getStructFieldData(partial, countField));
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> partial_sum = (List<DoubleWritable>) partialOI.getStructFieldData(partial, sumField);
+            List<DoubleWritable> partial_sum = (List<DoubleWritable>) sumFieldOI
+                    .getList(partialOI.getStructFieldData(partial, sumField));
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> partial_var = (List<DoubleWritable>) partialOI.getStructFieldData(partial, varField);
+            List<DoubleWritable> partial_var = (List<DoubleWritable>) varFieldOI
+                    .getList(partialOI.getStructFieldData(partial, varField));
 
             if (partial_count == null) {
                 return;

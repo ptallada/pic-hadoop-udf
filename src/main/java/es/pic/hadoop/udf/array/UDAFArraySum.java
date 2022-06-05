@@ -47,6 +47,8 @@ public class UDAFArraySum extends AbstractUDAFArrayResolver {
 
         @Override
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
+            super.init(m, parameters);
+
             if (parameters.length != 1) {
                 throw new UDFArgumentLengthException(
                         String.format("A single parameter was expected, got %d instead.", parameters.length));

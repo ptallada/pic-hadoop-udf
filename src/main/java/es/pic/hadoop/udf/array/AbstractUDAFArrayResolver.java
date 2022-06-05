@@ -103,7 +103,9 @@ public abstract class AbstractUDAFArrayResolver extends AbstractGenericUDAFResol
         }
 
         @Override
-        public abstract ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException;
+        public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
+            return super.init(m, parameters);
+        }
 
         @Override
         public AbstractAggregationBuffer getNewAggregationBuffer() throws HiveException {
@@ -172,7 +174,7 @@ public abstract class AbstractUDAFArrayResolver extends AbstractGenericUDAFResol
             @SuppressWarnings("unchecked")
             ArrayAggregationBuffer agg = ((ArrayAggregationBuffer) buff);
             @SuppressWarnings("unchecked")
-            List<Writable> array = (List<Writable>) outputOI.getList(partial);
+            List<Writable> array = (List<Writable>) inputOI.getList(partial);
 
             initAgg(agg, array);
 
