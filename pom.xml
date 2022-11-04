@@ -6,7 +6,7 @@
   <groupId>es.pic.hadoop</groupId>
   <artifactId>pic-hadoop-udf</artifactId>
   <packaging>jar</packaging>
-  <version>4.0.0-1</version>
+  <version>4.0.2-1</version>
   <name>hive-udf</name>
   <url>http://maven.apache.org</url>
 
@@ -33,30 +33,28 @@
           <version>2.22.2</version>
         </plugin>
       </plugins>
-    </pluginManagement>
-    
-      <plugins>
-        <plugin>
-          <groupId>org.jacoco</groupId>
-          <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.2</version>
-          <executions>
-              <execution>
-                  <goals>
-                      <goal>prepare-agent</goal>
-                  </goals>
-              </execution>
-              <execution>
-                  <id>report</id>
-                  <phase>prepare-package</phase>
-                  <goals>
-                      <goal>report</goal>
-                  </goals>
-              </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    
+    </pluginManagement>    
+    <plugins>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.2</version>
+        <executions>
+            <execution>
+                <goals>
+                    <goal>prepare-agent</goal>
+                </goals>
+            </execution>
+            <execution>
+                <id>report</id>
+                <phase>prepare-package</phase>
+                <goals>
+                    <goal>report</goal>
+                </goals>
+            </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
   <properties>
@@ -106,7 +104,13 @@
       <groupId>io.github.kostaskougios</groupId>
 	    <artifactId>cloning</artifactId>
 	    <version>1.10.3</version>
-      <scope>provided</scope>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.geometry</groupId>
+      <artifactId>s2-geometry</artifactId>
+      <version>2.0.0</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
