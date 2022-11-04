@@ -9,7 +9,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -30,10 +29,8 @@ import healpix.essentials.HealpixBase;
 public class UDFNpix2Nside extends GenericUDF {
     Converter npixConverter;
 
-    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
-    final static ObjectInspector intOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+    final static ObjectInspector intOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
 
     LongWritable npixArg;
 
@@ -71,7 +68,7 @@ public class UDFNpix2Nside extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%d)", npix);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("npix2nside", children);
     }
 }

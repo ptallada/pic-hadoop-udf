@@ -9,7 +9,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -31,10 +30,8 @@ public class UDFNest2Ring extends GenericUDF {
     Converter orderConverter;
     Converter ipixNestConverter;
 
-    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
-    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
 
     ByteWritable orderArg;
     LongWritable ipixNestArg;
@@ -77,7 +74,7 @@ public class UDFNest2Ring extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%d, %d)", order, ipixring);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("nest2ring", children);
     }
 }

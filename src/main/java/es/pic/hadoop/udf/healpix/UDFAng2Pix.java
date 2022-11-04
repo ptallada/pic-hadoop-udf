@@ -9,7 +9,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.ByteWritable;
@@ -22,7 +21,7 @@ import healpix.essentials.Pointing;
 // @formatter:off
 @Description(
     name = "ang2pix",
-    value = "_FUNC_(order:tinyint, theta/dec:float, phi/ra:float, [nest:bool=False, [lonlat:bool=False]]) -> ipix:bigint",
+    value = "_FUNC_(order:tinyint, theta/ra:float, phi/dec:float, [nest:bool=False, [lonlat:bool=False]]) -> ipix:bigint",
     extended = "Return the pixel corresponding to these angular coordinates."
 )
 @UDFType(
@@ -37,14 +36,10 @@ public class UDFAng2Pix extends GenericUDF {
     Converter nestConverter;
     Converter lonlatConverter;
 
-    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
-    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
 
     ByteWritable orderArg;
     DoubleWritable thetaArg;
@@ -67,7 +62,7 @@ public class UDFAng2Pix extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length < 3 || arguments.length > 5) {
             throw new UDFArgumentLengthException(
-                    "This function takes at least 3 arguments, no more than 5: order, theta/dec, phi/ra, nest, lonlat");
+                    "This function takes at least 3 arguments, no more than 5: order, theta/ra, phi/dec, nest, lonlat");
         }
 
         orderConverter = ObjectInspectorConverters.getConverter(arguments[0], byteOI);
@@ -90,8 +85,8 @@ public class UDFAng2Pix extends GenericUDF {
         thetaArg = (DoubleWritable) thetaConverter.convert(arguments[1].get());
         phiArg = (DoubleWritable) phiConverter.convert(arguments[2].get());
         // Alias
-        raArg = phiArg;
-        decArg = thetaArg;
+        raArg = thetaArg;
+        decArg = phiArg;
 
         if (arguments.length >= 4) {
             nestArg = (BooleanWritable) nestConverter.convert(arguments[3].get());
@@ -129,7 +124,7 @@ public class UDFAng2Pix extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%d, %g, %g, %b, %b)", order, theta, phi, nest, lonlat);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("ang2pix", children);
     }
 }

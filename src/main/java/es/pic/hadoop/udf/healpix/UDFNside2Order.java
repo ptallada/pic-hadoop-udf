@@ -9,7 +9,6 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -30,10 +29,8 @@ import healpix.essentials.HealpixBase;
 public class UDFNside2Order extends GenericUDF {
     Converter nsideConverter;
 
-    final static ObjectInspector intOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.INT);
-    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
+    final static ObjectInspector intOI = PrimitiveObjectInspectorFactory.writableIntObjectInspector;
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
 
     IntWritable nsideArg;
 
@@ -71,7 +68,7 @@ public class UDFNside2Order extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%d)", nside);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("nside2order", children);
     }
 }

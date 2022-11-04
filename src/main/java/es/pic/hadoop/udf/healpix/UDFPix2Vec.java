@@ -12,7 +12,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.ByteWritable;
@@ -25,7 +24,7 @@ import healpix.essentials.Vec3;
 // @formatter:off
 @Description(
     name = "pix2vec",
-    value = "_FUNC_(order:tinyint, ipix:bigint, [nest:bool=False]) -> array<float>(x, y, z)",
+    value = "_FUNC_(order:tinyint, ipix:bigint, [nest:bool=False]) -> array<double>(x, y, z)",
     extended = "Return the 3D position vector corresponding to this pixel."
 )
 @UDFType(
@@ -38,14 +37,10 @@ public class UDFPix2Vec extends GenericUDF {
     Converter ipixConverter;
     Converter nestConverter;
 
-    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
-    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
-    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
+    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     ByteWritable orderArg;
     LongWritable ipixArg;
@@ -111,7 +106,7 @@ public class UDFPix2Vec extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%d, %d, %b)", order, ipix, nest);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("pix2vec", children);
     }
 }

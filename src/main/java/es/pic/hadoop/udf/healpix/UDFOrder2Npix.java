@@ -9,9 +9,8 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.LongWritable;
 
 import healpix.essentials.HealpixBase;
@@ -30,12 +29,10 @@ import healpix.essentials.HealpixBase;
 public class UDFOrder2Npix extends GenericUDF {
     Converter orderConverter;
 
-    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BYTE);
-    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.LONG);
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
+    final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
 
-    IntWritable orderArg;
+    ByteWritable orderArg;
 
     int order;
     long npix;
@@ -53,7 +50,7 @@ public class UDFOrder2Npix extends GenericUDF {
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-        orderArg = (IntWritable) orderConverter.convert(arguments[0].get());
+        orderArg = (ByteWritable) orderConverter.convert(arguments[0].get());
 
         if (orderArg == null) {
             return null;
@@ -62,7 +59,7 @@ public class UDFOrder2Npix extends GenericUDF {
         order = orderArg.get();
 
         try {
-            npix = HealpixBase.nside2Npix(order);
+            npix = HealpixBase.order2Npix(order);
         } catch (Exception e) {
             throw new HiveException(e);
         }
@@ -71,7 +68,7 @@ public class UDFOrder2Npix extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%d)", order);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("order2npix", children);
     }
 }

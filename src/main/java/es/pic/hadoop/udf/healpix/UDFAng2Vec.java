@@ -12,7 +12,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -20,7 +19,7 @@ import org.apache.hadoop.io.DoubleWritable;
 // @formatter:off
 @Description(
     name = "ang2vec",
-    value = "_FUNC_(theta/dec:float, phi/ra:float, [lonlat:bool=False]) -> array<float>(x, y, z)",
+    value = "_FUNC_(theta/ra:float, phi/dec:float, [lonlat:bool=False]) -> array<double>(x, y, z)",
     extended = "Return the 3D position vector corresponding to these angular coordinates."
 )
 @UDFType(
@@ -33,10 +32,8 @@ public class UDFAng2Vec extends GenericUDF {
     Converter phiConverter;
     Converter lonlatConverter;
 
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
-    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
     DoubleWritable thetaArg;
     DoubleWritable phiArg;
@@ -57,7 +54,7 @@ public class UDFAng2Vec extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length < 2 || arguments.length > 3) {
             throw new UDFArgumentLengthException(
-                    "This function takes at least 2 arguments, no more than 3: theta/dec, phi/ra, lonlat");
+                    "This function takes at least 2 arguments, no more than 3: theta/ra, phi/dec, lonlat");
         }
 
         thetaConverter = ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
@@ -75,8 +72,8 @@ public class UDFAng2Vec extends GenericUDF {
         thetaArg = (DoubleWritable) thetaConverter.convert(arguments[0].get());
         phiArg = (DoubleWritable) phiConverter.convert(arguments[1].get());
         // Alias
-        raArg = phiArg;
-        decArg = thetaArg;
+        raArg = thetaArg;
+        decArg = phiArg;
 
         if (arguments.length == 3) {
             lonlatArg = (BooleanWritable) lonlatConverter.convert(arguments[2].get());
@@ -103,7 +100,7 @@ public class UDFAng2Vec extends GenericUDF {
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%g, %g, %b)", theta, phi, lonlat);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("ang2vec", children);
     }
 }

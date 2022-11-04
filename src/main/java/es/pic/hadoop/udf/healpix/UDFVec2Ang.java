@@ -12,7 +12,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
@@ -20,7 +19,7 @@ import org.apache.hadoop.io.DoubleWritable;
 // @formatter:off
 @Description(
     name = "vec2ang",
-    value = "_FUNC_(x:float, y:float, z:float, [lonlat:bool=False]) -> array<float>(theta/dec, phi/ra)",
+    value = "_FUNC_(x:float, y:float, z:float, [lonlat:bool=False]) -> array<double>(theta/ra, phi/dec)",
     extended = "Return the angular coordinates corresponding to this 3D position vector."
 )
 @UDFType(
@@ -34,10 +33,8 @@ public class UDFVec2Ang extends GenericUDF {
     Converter zConverter;
     Converter lonlatConverter;
 
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
-    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory
-            .getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.BOOLEAN);
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector boolOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
     DoubleWritable xArg;
     DoubleWritable yArg;
@@ -102,14 +99,14 @@ public class UDFVec2Ang extends GenericUDF {
         if (lonlat) {
             dec.set(90 - theta.get() * 180 / Math.PI);
             ra.set(phi.get() * 180 / Math.PI);
-            return Arrays.asList(dec, ra);
+            return Arrays.asList(ra, dec);
         } else {
             return Arrays.asList(theta, phi);
         }
     }
 
     @Override
-    public String getDisplayString(String[] arg0) {
-        return String.format("arguments (%g, %g, %g, %b)", x, y, z, lonlat);
+    public String getDisplayString(String[] children) {
+        return getStandardDisplayString("vec2ang", children);
     }
 }
