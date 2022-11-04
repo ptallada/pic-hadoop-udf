@@ -1,4 +1,4 @@
-package es.pic.astro.hive_udf;
+package es.pic.hadoop.udf.math;
 
 import java.lang.Math;
 

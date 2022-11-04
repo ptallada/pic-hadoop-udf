@@ -1,4 +1,4 @@
-package es.pic.astro.hive_udf;
+package es.pic.hadoop.udf.math;
 import java.lang.Math;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
