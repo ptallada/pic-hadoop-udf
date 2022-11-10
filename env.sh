@@ -13,5 +13,7 @@ export HIVE_OPTS="\
 export HADOOP_CLIENT_OPTS="-Xmx8192m"
 export HADOOP_CLASSPATH=/nfs/pic.es/user/t/tallada/src/pic-hadoop-udf/target/classes/
 
+# hive -hiveconf hive.root.logger=DEBUG,console --debug
+
 # Coverage reports ar available at
 # https://jupyter.pic.es/user/tallada/proxy/3000/target/site/jacoco/index.html
