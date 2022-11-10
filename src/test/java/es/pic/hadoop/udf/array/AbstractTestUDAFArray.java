@@ -9,7 +9,6 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.parse.SemanticException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggregationBuffer;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
@@ -218,7 +217,8 @@ public abstract class AbstractTestUDAFArray {
             });
 
             @SuppressWarnings("deprecation")
-            AggregationBuffer agg = eval.getNewAggregationBuffer();
+            org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer agg = eval
+                    .getNewAggregationBuffer();
 
             // Test null value
             eval.iterate(agg, new Object[] {
@@ -259,11 +259,14 @@ public abstract class AbstractTestUDAFArray {
             });
 
             @SuppressWarnings("deprecation")
-            AggregationBuffer agg1 = evalPartial1.getNewAggregationBuffer();
+            org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer agg1 = evalPartial1
+                    .getNewAggregationBuffer();
             @SuppressWarnings("deprecation")
-            AggregationBuffer agg2 = evalPartial2.getNewAggregationBuffer();
+            org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer agg2 = evalPartial2
+                    .getNewAggregationBuffer();
             @SuppressWarnings("deprecation")
-            AggregationBuffer aggF = evalFinal.getNewAggregationBuffer();
+            org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AggregationBuffer aggF = evalFinal
+                    .getNewAggregationBuffer();
 
             // Test null reference
             evalPartial2.merge(agg2, null); // Must not throw any exception
