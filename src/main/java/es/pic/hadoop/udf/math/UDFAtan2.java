@@ -11,62 +11,59 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.io.DoubleWritable;
 
+// @formatter:off
 @Description(
-    name="atan2",
-    value="_FUNC_(y, x) - Returns atan2",
-    extended="SELECT _FUNC_(1.2, 2.1) FROM foo LIMIT 1;"
+    name = "atan2",
+    value = "_FUNC_(y, x) - Returns atan2", 
+    extended = "SELECT _FUNC_(1.2, 2.1) FROM foo LIMIT 1;"
 )
 @UDFType(
-    deterministic = true,
+    deterministic = true, 
     stateful = false
 )
+// @formatter:on
 public class UDFAtan2 extends GenericUDF {
 
-    private final Object[] result = new Object[1];
-    private final DoubleWritable atanWritable = new DoubleWritable();
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
-    private Converter[] doubleconverter = new Converter[2];
-    
+    Converter xConverter;
+    Converter yConverter;
+
+    DoubleWritable xArg;
+    DoubleWritable yArg;
+
+    double x;
+    double y;
+
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
-        if (arguments.length !=2) {
-            throw new UDFArgumentLengthException("atan2() takes 2 arguments: y, x");
+        if (arguments.length != 2) {
+            throw new UDFArgumentLengthException("This function takes 2 arguments: y, x");
         }
 
-        ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE);
-        doubleconverter[0] = (Converter) ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
-        doubleconverter[1] = (Converter) ObjectInspectorConverters.getConverter(arguments[1], doubleOI);
-        result[0] = atanWritable;
+        xConverter = ObjectInspectorConverters.getConverter(arguments[1], doubleOI);
+        yConverter = ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
 
-        return PrimitiveObjectInspectorFactory.getPrimitiveWritableObjectInspector(PrimitiveObjectInspector.PrimitiveCategory.DOUBLE); 
+        return doubleOI;
     }
-
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
+        xArg = (DoubleWritable) xConverter.convert(arguments[1].get());
+        yArg = (DoubleWritable) yConverter.convert(arguments[0].get());
 
-        DoubleWritable[] argsw1 = new DoubleWritable[2];
-
-        argsw1[0] = (DoubleWritable) doubleconverter[0].convert(arguments[0].get());
-        argsw1[1] = (DoubleWritable) doubleconverter[1].convert(arguments[1].get());
-
-        if (argsw1[0] == null || argsw1[1] == null) {
-            result[0] = null;
-            return result;
+        if (xArg == null || yArg == null) {
+            return null;
         }
-        
-        double y = argsw1[0].get();
-        double x = argsw1[1].get();
-        atanWritable.set(Math.atan2(y,x));
-        result[0] = atanWritable;
-	
-        return result[0];
-    }
 
+        x = xArg.get();
+        y = yArg.get();
+
+        return new DoubleWritable(Math.atan2(y, x));
+    }
 
     @Override
     public String getDisplayString(String[] arg0) {
