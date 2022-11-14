@@ -1,4 +1,4 @@
-package es.pic.hadoop.udf.math;
+package es.pic.hadoop.udf.adql;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,15 +13,16 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.LongWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestAtan2 {
+public class TestPoint {
 
-    UDFAtan2 udf = new UDFAtan2();
+    UDFPoint udf = new UDFPoint();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    ObjectInspector outputOI = ADQLGeometry.OI;
 
     @Test
     void emptyArguments() {
@@ -38,12 +39,24 @@ public class TestAtan2 {
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
-        assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 1)));
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 3)));
     }
 
     @Test
-    void nullValues() throws HiveException {
+    void nullPixel() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
+        };
+
+        assertEquals(udf.initialize(params), outputOI);
+
+        assertNull(udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(null)
+        }));
+    }
+
+    @Test
+    void nullCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
@@ -52,12 +65,44 @@ public class TestAtan2 {
         assertEquals(udf.initialize(params), outputOI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(null), new DeferredJavaObject(null)
+                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(20))
+        }));
+        assertNull(udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(new DoubleWritable(20)), new DeferredJavaObject(null),
+        }));
+        assertNull(udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(null), new DeferredJavaObject(null),
         }));
     }
 
     @Test
-    void validValues() throws HiveException {
+    void invalidPixel() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
+        };
+
+        assertEquals(udf.initialize(params), outputOI);
+
+        assertThrows(HiveException.class, () -> udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(new LongWritable(-1)),
+        }));
+    }
+
+    @Test
+    void validPixels() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
+        };
+
+        assertEquals(udf.initialize(params), outputOI);
+
+        assertEquals("0:[45.0, 7.114779521089076E-8]", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(new LongWritable(0)),
+        }).toString());
+    }
+
+    @Test
+    void validDoubleCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
@@ -65,23 +110,8 @@ public class TestAtan2 {
 
         assertEquals(udf.initialize(params), outputOI);
 
-        assertEquals("0.7853981633974483", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(1)), new DeferredJavaObject(new DoubleWritable(1))
-        }).toString());
-        assertEquals("2.356194490192345", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(1)), new DeferredJavaObject(new DoubleWritable(-1))
-        }).toString());
-        assertEquals("-2.356194490192345", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(-1)), new DeferredJavaObject(new DoubleWritable(-1))
-        }).toString());
-        assertEquals("1.5707963267948966", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(1)), new DeferredJavaObject(new DoubleWritable(0))
-        }).toString());
-        assertEquals("-1.5707963267948966", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(-1)), new DeferredJavaObject(new DoubleWritable(0))
-        }).toString());
-        assertEquals("0.0", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0))
+        assertEquals("0:[0.0, 0.0]", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
         }).toString());
     }
 
