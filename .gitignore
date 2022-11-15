@@ -4,3 +4,4 @@
 target/
 
 cov.xml
+derby.log

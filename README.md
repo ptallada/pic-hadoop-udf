@@ -72,27 +72,27 @@ CREATE FUNCTION array_var_samp AS 'es.pic.hadoop.udf.array.UDAFArrayVarianceSamp
 
 ## ADQL
 ```
-DROP FUNCTION IF EXISTS area;
-DROP FUNCTION IF EXISTS box;
-DROP FUNCTION IF EXISTS centroid;
-DROP FUNCTION IF EXISTS circle;
-DROP FUNCTION IF EXISTS contains;
-DROP FUNCTION IF EXISTS coord1;
-DROP FUNCTION IF EXISTS coord2;
-DROP FUNCTION IF EXISTS distance;
-DROP FUNCTION IF EXISTS intersects;
-DROP FUNCTION IF EXISTS point;
-DROP FUNCTION IF EXISTS polygon;
+DROP FUNCTION IF EXISTS adql_area;
+DROP FUNCTION IF EXISTS adql_box;
+DROP FUNCTION IF EXISTS adql_centroid;
+DROP FUNCTION IF EXISTS adql_circle;
+DROP FUNCTION IF EXISTS adql_contains;
+DROP FUNCTION IF EXISTS adql_coord1;
+DROP FUNCTION IF EXISTS adql_coord2;
+DROP FUNCTION IF EXISTS adql_distance;
+DROP FUNCTION IF EXISTS adql_intersects;
+DROP FUNCTION IF EXISTS adql_point;
+DROP FUNCTION IF EXISTS adql_polygon;
 
-CREATE FUNCTION area AS 'es.pic.hadoop.udf.adql.UDFArea';
-CREATE FUNCTION box AS 'es.pic.hadoop.udf.adql.UDFBox';
-CREATE FUNCTION centroid AS 'es.pic.hadoop.udf.adql.UDFCentroid';
-CREATE FUNCTION circle AS 'es.pic.hadoop.udf.adql.UDFCircle';
-CREATE FUNCTION contains AS 'es.pic.hadoop.udf.adql.UDFContains';
-CREATE FUNCTION coord1 AS 'es.pic.hadoop.udf.adql.UDFCoord1';
-CREATE FUNCTION coord2 AS 'es.pic.hadoop.udf.adql.UDFCoord2';
-CREATE FUNCTION distance AS 'es.pic.hadoop.udf.adql.UDFDistance';
-CREATE FUNCTION intersects AS 'es.pic.hadoop.udf.adql.UDFIntersects';
-CREATE FUNCTION point AS 'es.pic.hadoop.udf.adql.UDFPoint';
-CREATE FUNCTION polygon AS 'es.pic.hadoop.udf.adql.UDFPolygon';
+CREATE FUNCTION adql_area AS 'es.pic.hadoop.udf.adql.UDFArea';
+CREATE FUNCTION adql_box AS 'es.pic.hadoop.udf.adql.UDFBox';
+CREATE FUNCTION adql_centroid AS 'es.pic.hadoop.udf.adql.UDFCentroid';
+CREATE FUNCTION adql_circle AS 'es.pic.hadoop.udf.adql.UDFCircle';
+CREATE FUNCTION adql_contains AS 'es.pic.hadoop.udf.adql.UDFContains';
+CREATE FUNCTION adql_coord1 AS 'es.pic.hadoop.udf.adql.UDFCoord1';
+CREATE FUNCTION adql_coord2 AS 'es.pic.hadoop.udf.adql.UDFCoord2';
+CREATE FUNCTION adql_distance AS 'es.pic.hadoop.udf.adql.UDFDistance';
+CREATE FUNCTION adql_intersects AS 'es.pic.hadoop.udf.adql.UDFIntersects';
+CREATE FUNCTION adql_point AS 'es.pic.hadoop.udf.adql.UDFPoint';
+CREATE FUNCTION adql_polygon AS 'es.pic.hadoop.udf.adql.UDFPolygon';
 ```
