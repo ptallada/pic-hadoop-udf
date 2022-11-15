@@ -1,7 +1,10 @@
 package es.pic.hadoop.udf.adql;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.geometry.S2LatLng;
+import com.google.common.geometry.S2LatLngRect;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -41,16 +44,21 @@ public class UDFBox extends GenericUDF {
     DoubleWritable decArg;
     DoubleWritable widthArg;
     DoubleWritable heightArg;
-    Object geom;
-    ADQLGeometry.Kind kind;
 
     double ra;
     double dec;
     double width;
     double height;
 
+    Object geom;
+    ADQLGeometry.Kind kind;
+
+    S2LatLng center;
+    S2LatLng size;
+    S2LatLngRect box;
+
+    List<DoubleWritable> coords;
     Object polygon;
-    List<DoubleWritable> value;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -117,16 +125,20 @@ public class UDFBox extends GenericUDF {
         width = widthArg.get();
         height = heightArg.get();
 
-        // Build CCW vertex list, interior is on the left.
-        value = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(ra - width / 2), new DoubleWritable(dec - height / 2),
-                new DoubleWritable(ra + width / 2), new DoubleWritable(dec - height / 2),
-                new DoubleWritable(ra + width / 2), new DoubleWritable(dec + height / 2),
-                new DoubleWritable(ra - width / 2), new DoubleWritable(dec + height / 2),
-        });
+        center = S2LatLng.fromDegrees(dec, ra);
+        size = S2LatLng.fromDegrees(height, width);
+        box = S2LatLngRect.fromCenterSize(center, size);
+
+        coords = new ArrayList<DoubleWritable>();
+        for (int i = 0; i < 4; i++) {
+            center = box.getVertex(i);
+
+            coords.add(new DoubleWritable(center.lngDegrees()));
+            coords.add(new DoubleWritable(center.latDegrees()));
+        }
 
         polygon = geomOI.create();
-        geomOI.setFieldAndTag(polygon, value, ADQLGeometry.Kind.POLYGON.tag);
+        geomOI.setFieldAndTag(polygon, coords, ADQLGeometry.Kind.POLYGON.tag);
 
         return polygon;
     }

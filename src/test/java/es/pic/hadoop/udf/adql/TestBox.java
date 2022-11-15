@@ -151,8 +151,8 @@ public class TestBox {
 
         assertEquals(udf.initialize(params), outputOI);
 
-        assertEquals("2:[7.5, 17.0, 12.5, 17.0, 12.5, 23.0, 7.5, 23.0]", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(5)),
+        assertEquals("2:[8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0]", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(4)),
                 new DeferredJavaObject(new DoubleWritable(6)),
         }).toString());
     }
@@ -168,9 +168,9 @@ public class TestBox {
 
         assertEquals(udf.initialize(params), outputOI);
 
-        assertEquals("2:[7.5, 17.0, 12.5, 17.0, 12.5, 23.0, 7.5, 23.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("2:[8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),
-                new DeferredJavaObject(new DoubleWritable(5)), new DeferredJavaObject(new DoubleWritable(6)),
+                new DeferredJavaObject(new DoubleWritable(4)), new DeferredJavaObject(new DoubleWritable(6)),
         }).toString());
     }
 
