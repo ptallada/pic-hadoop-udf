@@ -44,12 +44,12 @@ public class UDFContains extends GenericUDF {
 
     double ra;
     double dec;
-    double radius;
 
     S2Point point1;
     S2Point point2;
     S2Cap circle1;
     S2Cap circle2;
+    S1Angle radius;
     S2Loop polygon1;
     S2Loop polygon2;
 
@@ -128,7 +128,7 @@ public class UDFContains extends GenericUDF {
         } else if (kind1 == ADQLGeometry.Kind.CIRCLE && kind2 == ADQLGeometry.Kind.POLYGON) {
             // CIRCLE inside POLYGON
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
-            radius = coords1.get(2).get();
+            radius = S1Angle.degrees(coords1.get(2).get());
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < coords2.size(); i += 2) {
@@ -139,13 +139,16 @@ public class UDFContains extends GenericUDF {
 
             polygon2 = new S2Loop(vertices);
 
-            return new BooleanWritable(polygon2.contains(point1) && (polygon2.getDistance(point1).degrees() > radius));
+            return new BooleanWritable(polygon2.contains(point1) && polygon2.getDistance(point1).greaterThan(radius));
 
         } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.CIRCLE) {
             // POLYGON inside CIRCLE
             point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
-            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(coords2.get(2).get()));
+            radius = S1Angle.degrees(coords2.get(2).get());
+            circle2 = S2Cap.fromAxisAngle(point2, radius);
 
+            // Circle must contain every vertex
+            vertices = new ArrayList<S2Point>();
             for (int i = 0; i < coords1.size(); i += 2) {
                 ra = coords1.get(i).get();
                 dec = coords1.get(i + 1).get();
@@ -153,10 +156,22 @@ public class UDFContains extends GenericUDF {
                 point1 = S2LatLng.fromDegrees(dec, ra).toPoint();
                 if (!circle2.contains(point1)) {
                     return new BooleanWritable(false);
+                } else {
+                    vertices.add(point1);
                 }
-            }
 
-            return new BooleanWritable(true);
+            }
+            polygon2 = new S2Loop(vertices);
+
+            // And polygon cannot overlap with circle's complement.
+            circle2 = circle2.complement();
+            point2 = circle2.axis();
+            radius = circle2.angle();
+            if (polygon2.contains(point2) || polygon2.getDistance(point2).lessOrEquals(radius)) {
+                return new BooleanWritable(false);
+            } else {
+                return new BooleanWritable(true);
+            }
 
         } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
             // POLYGON inside POLYGON
