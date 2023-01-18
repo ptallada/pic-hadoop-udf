@@ -119,10 +119,7 @@ public class UDFPolygon extends GenericUDF {
             }
         }
 
-        polygon = geomOI.create();
-        geomOI.setFieldAndTag(polygon, coordArgs, ADQLGeometry.Kind.POLYGON.tag);
-
-        return polygon;
+        return new ADQLPolygon(coordArgs).serialize();
     }
 
     @Override

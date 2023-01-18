@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -29,17 +28,8 @@ public class TestBox {
     Object circle;
 
     public TestBox() {
-        List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20)
-        });
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords, ADQLGeometry.Kind.POINT.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30)
-        });
-        circle = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        point = new ADQLPoint(10, 20).serialize();
+        circle = new ADQLCircle(10, 20, 30).serialize();
     }
 
     @Test

@@ -58,7 +58,6 @@ public class UDFBox extends GenericUDF {
     S2LatLngRect box;
 
     List<DoubleWritable> coords;
-    Object polygon;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -137,10 +136,7 @@ public class UDFBox extends GenericUDF {
             coords.add(new DoubleWritable(center.latDegrees()));
         }
 
-        polygon = geomOI.create();
-        geomOI.setFieldAndTag(polygon, coords, ADQLGeometry.Kind.POLYGON.tag);
-
-        return polygon;
+        return new ADQLPolygon(coords).serialize();
     }
 
     @Override

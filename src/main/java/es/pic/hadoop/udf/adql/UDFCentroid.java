@@ -101,7 +101,7 @@ public class UDFCentroid extends GenericUDF {
 
         case REGION:
         default:
-            throw new UnsupportedOperationException("Operations on regions are not yet supported");
+            throw new UnsupportedOperationException("REGIONs are not supported");
         }
     }
 

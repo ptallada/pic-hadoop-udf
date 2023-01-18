@@ -22,6 +22,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspecto
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
+import healpix.essentials.Moc;
+
 // @formatter:off
 @Description(
     name = "intersects",
@@ -184,7 +186,7 @@ public class UDFIntersects extends GenericUDF {
 
             return new BooleanWritable(polygon2.contains(point1) || polygon2.getDistance(point1).degrees() <= radius);
 
-        } else { // (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON)
+        } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
             // POLYGON overlaps POLYGON
             double ra;
             double dec;
@@ -207,6 +209,11 @@ public class UDFIntersects extends GenericUDF {
 
             return new BooleanWritable(polygon2.intersects(polygon1));
 
+        } else { // (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION)
+            Moc region1 = UDFRegion.fromGeometry(geom1);
+            Moc region2 = UDFRegion.fromGeometry(geom1);
+
+            return new BooleanWritable(region1.overlaps(region2));
         }
     }
 

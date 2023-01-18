@@ -1,8 +1,5 @@
 package es.pic.hadoop.udf.adql;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
@@ -17,6 +14,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspecto
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.LongWritable;
 
+import healpix.essentials.HealpixBase;
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Pointing;
 
@@ -32,8 +30,6 @@ import healpix.essentials.Pointing;
 )
 // @formatter:on
 public class UDFPoint extends GenericUDF {
-    final static int MAX_ORDER = 29;
-
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
     final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
@@ -48,9 +44,6 @@ public class UDFPoint extends GenericUDF {
 
     boolean is_pixel;
     Pointing pt;
-
-    Object geom;
-    List<DoubleWritable> value;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -80,13 +73,13 @@ public class UDFPoint extends GenericUDF {
             }
 
             try {
-                pt = HealpixProc.pix2angNest(MAX_ORDER, ipixArg.get());
+                pt = HealpixProc.pix2angNest(HealpixBase.order_max, ipixArg.get());
             } catch (Exception e) {
                 throw new HiveException(e);
             }
 
-            raArg = new DoubleWritable(pt.phi * 180 / Math.PI);
-            decArg = new DoubleWritable(90 - pt.theta * 180 / Math.PI);
+            raArg = new DoubleWritable(Math.toDegrees(pt.phi));
+            decArg = new DoubleWritable(90 - Math.toDegrees(pt.theta));
 
         } else {
             raArg = (DoubleWritable) raConverter.convert(arguments[0].get());
@@ -97,14 +90,7 @@ public class UDFPoint extends GenericUDF {
             }
         }
 
-        value = Arrays.asList(new DoubleWritable[] {
-                raArg, decArg
-        });
-
-        geom = geomOI.create();
-        geomOI.setFieldAndTag(geom, value, ADQLGeometry.Kind.POINT.tag);
-
-        return geom;
+        return new ADQLPoint(raArg.get(), decArg.get()).serialize();
     }
 
     @Override

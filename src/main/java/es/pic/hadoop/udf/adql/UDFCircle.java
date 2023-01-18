@@ -39,10 +39,10 @@ public class UDFCircle extends GenericUDF {
     DoubleWritable raArg;
     DoubleWritable decArg;
     DoubleWritable radiusArg;
+
     Object geom;
     ADQLGeometry.Kind kind;
 
-    Object circle;
     List<DoubleWritable> value;
 
     @Override
@@ -103,10 +103,8 @@ public class UDFCircle extends GenericUDF {
         value = Arrays.asList(new DoubleWritable[] {
                 raArg, decArg, radiusArg
         });
-        circle = geomOI.create();
-        geomOI.setFieldAndTag(circle, value, ADQLGeometry.Kind.CIRCLE.tag);
 
-        return circle;
+        return new ADQLCircle(value).serialize();
     }
 
     @Override

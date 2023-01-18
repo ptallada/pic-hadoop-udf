@@ -83,6 +83,7 @@ DROP FUNCTION IF EXISTS adql_distance;
 DROP FUNCTION IF EXISTS adql_intersects;
 DROP FUNCTION IF EXISTS adql_point;
 DROP FUNCTION IF EXISTS adql_polygon;
+DROP FUNCTION IF EXISTS adql_region;
 
 CREATE FUNCTION adql_area AS 'es.pic.hadoop.udf.adql.UDFArea';
 CREATE FUNCTION adql_box AS 'es.pic.hadoop.udf.adql.UDFBox';
@@ -95,4 +96,5 @@ CREATE FUNCTION adql_distance AS 'es.pic.hadoop.udf.adql.UDFDistance';
 CREATE FUNCTION adql_intersects AS 'es.pic.hadoop.udf.adql.UDFIntersects';
 CREATE FUNCTION adql_point AS 'es.pic.hadoop.udf.adql.UDFPoint';
 CREATE FUNCTION adql_polygon AS 'es.pic.hadoop.udf.adql.UDFPolygon';
+CREATE FUNCTION adql_region AS 'es.pic.hadoop.udf.adql.UDFRegion';
 ```

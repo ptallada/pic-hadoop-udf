@@ -22,6 +22,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspecto
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
+import healpix.essentials.HealpixBase;
+import healpix.essentials.HealpixProc;
+import healpix.essentials.Moc;
+import healpix.essentials.Pointing;
+
 // @formatter:off
 @Description(
     name = "contains",
@@ -44,6 +49,9 @@ public class UDFContains extends GenericUDF {
 
     double ra;
     double dec;
+    double theta;
+    double phi;
+    long ipix;
 
     S2Point point1;
     S2Point point2;
@@ -52,6 +60,8 @@ public class UDFContains extends GenericUDF {
     S1Angle radius;
     S2Loop polygon1;
     S2Loop polygon2;
+    Moc region1;
+    Moc region2;
 
     List<S2Point> vertices;
 
@@ -83,8 +93,37 @@ public class UDFContains extends GenericUDF {
         kind1 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom1));
         kind2 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom2));
 
-        if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
-            throw new UnsupportedOperationException("Operations on regions are not yet supported");
+        if (kind2 == ADQLGeometry.Kind.POINT) {
+            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
+
+        } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.REGION) {
+            // POINT inside REGION
+            @SuppressWarnings("unchecked")
+            List<DoubleWritable> coords1 = (List<DoubleWritable>) geomOI.getField(geom1);
+
+            theta = Math.toRadians(90 - coords1.get(1).get());
+            phi = Math.toRadians(coords1.get(0).get());
+
+            try {
+                ipix = HealpixProc.ang2pixNest(HealpixBase.order_max, new Pointing(theta, phi));
+            } catch (Exception e) {
+                throw new HiveException(e);
+            }
+
+            region1 = new Moc();
+            region1.addPixel(HealpixBase.order_max, ipix);
+
+            region2 = UDFRegion.fromGeometry(geom2);
+
+            return new BooleanWritable(region2.contains(region1));
+
+        } else if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
+            // REGION combined with CIRCLE, POLYGON or REGION, in any order
+            Moc region1 = UDFRegion.fromGeometry(geom1);
+            Moc region2 = UDFRegion.fromGeometry(geom2);
+
+            return new BooleanWritable(region2.contains(region1));
+
         }
 
         @SuppressWarnings("unchecked")
@@ -92,7 +131,10 @@ public class UDFContains extends GenericUDF {
         @SuppressWarnings("unchecked")
         List<DoubleWritable> coords2 = (List<DoubleWritable>) geomOI.getField(geom2);
 
-        if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
+        if (kind2 == ADQLGeometry.Kind.POINT) {
+            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
+
+        } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
             // POINT inside CIRCLE
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
             point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
@@ -173,7 +215,7 @@ public class UDFContains extends GenericUDF {
                 return new BooleanWritable(true);
             }
 
-        } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
+        } else { // (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON)
             // POLYGON inside POLYGON
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < coords1.size(); i += 2) {
@@ -193,8 +235,6 @@ public class UDFContains extends GenericUDF {
 
             return new BooleanWritable(polygon2.containsNested(polygon1));
 
-        } else {
-            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
         }
     }
 

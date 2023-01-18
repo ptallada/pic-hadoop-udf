@@ -28,38 +28,21 @@ public class TestPolygon {
 
     List<DoubleWritable> coords;
     List<Object> points = new ArrayList<Object>();
+    
     Object circle;
 
     public TestPolygon() {
-        Object point;
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(11), new DoubleWritable(22), new DoubleWritable(33)
-        });
-
-        circle = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        circle = new ADQLCircle(11, 22, 33).serialize();
 
         coords = Arrays.asList(new DoubleWritable[] {
                 new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30), new DoubleWritable(40),
                 new DoubleWritable(50), new DoubleWritable(60), new DoubleWritable(70), new DoubleWritable(80),
         });
 
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(0, 2), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
-
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(2, 4), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
-
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(4, 6), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
-
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(6, 8), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
+        points.add(new ADQLPoint(coords.subList(0, 2)).serialize());
+        points.add(new ADQLPoint(coords.subList(2, 4)).serialize());
+        points.add(new ADQLPoint(coords.subList(4, 6)).serialize());
+        points.add(new ADQLPoint(coords.subList(6, 8)).serialize());
     }
 
     @Test
