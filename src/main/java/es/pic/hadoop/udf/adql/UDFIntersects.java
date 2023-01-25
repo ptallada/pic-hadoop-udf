@@ -64,7 +64,7 @@ public class UDFIntersects extends GenericUDF {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
             if (arguments[1] != ADQLGeometry.OI) {
-                throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
+                throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else {
             throw new UDFArgumentLengthException("This function takes 2 arguments: geom1, geom2");

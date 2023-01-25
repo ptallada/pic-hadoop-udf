@@ -53,7 +53,7 @@ public class UDFDistance extends GenericUDF {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
             if (arguments[1] != ADQLGeometry.OI) {
-                throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
+                throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else if (arguments.length == 4) {
             ra1Converter = ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
@@ -86,7 +86,7 @@ public class UDFDistance extends GenericUDF {
                         String.format("First geometry is not a POINT, but a %s.", kind1.name()));
             }
             if (kind2 != ADQLGeometry.Kind.POINT) {
-                throw new UDFArgumentTypeException(0,
+                throw new UDFArgumentTypeException(1,
                         String.format("Second geometry is not a POINT, but a %s.", kind2.name()));
             }
 

@@ -70,7 +70,7 @@ public class UDFContains extends GenericUDF {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
             if (arguments[1] != ADQLGeometry.OI) {
-                throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
+                throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else {
             throw new UDFArgumentLengthException("This function takes 2 arguments: geom1, geom2");
@@ -92,7 +92,7 @@ public class UDFContains extends GenericUDF {
         kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
 
         if (kind2 == ADQLGeometry.Kind.POINT) {
-            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
+            throw new UDFArgumentTypeException(1, "Second geometry cannot be a POINT.");
 
         } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.REGION) {
             // POINT inside REGION
@@ -130,7 +130,7 @@ public class UDFContains extends GenericUDF {
         List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
 
         if (kind2 == ADQLGeometry.Kind.POINT) {
-            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
+            throw new UDFArgumentTypeException(1, "Second geometry cannot be a POINT.");
 
         } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
             // POINT inside CIRCLE
