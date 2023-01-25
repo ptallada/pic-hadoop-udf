@@ -18,7 +18,6 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
@@ -37,7 +36,6 @@ import healpix.essentials.Moc;
 // @formatter:on
 public class UDFIntersects extends GenericUDF {
     final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Object geom1;
     Object geom2;
@@ -62,10 +60,10 @@ public class UDFIntersects extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
-            if (arguments[1] != geomOI) {
+            if (arguments[1] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
             }
         } else {
@@ -84,17 +82,17 @@ public class UDFIntersects extends GenericUDF {
             return null;
         }
 
-        kind1 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom1));
-        kind2 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom2));
+        kind1 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom1));
+        kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
 
         if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
             throw new UnsupportedOperationException("Operations on regions are not yet supported");
         }
 
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords1 = (List<DoubleWritable>) geomOI.getField(geom1);
+        List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords2 = (List<DoubleWritable>) geomOI.getField(geom2);
+        List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
 
         if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.POINT) {
             // POINT overlaps POINT

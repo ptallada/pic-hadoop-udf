@@ -17,7 +17,6 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -33,7 +32,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 // @formatter:on
 public class UDFBox extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Converter raConverter;
     Converter decConverter;
@@ -62,7 +60,7 @@ public class UDFBox extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 3) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
 
@@ -80,7 +78,7 @@ public class UDFBox extends GenericUDF {
                     "This function takes 3 or 4 arguments: either (point, width, height) or (ra, dec, width, height)");
         }
 
-        return geomOI;
+        return ADQLGeometry.OI;
     }
 
     @Override
@@ -92,7 +90,7 @@ public class UDFBox extends GenericUDF {
                 return null;
             }
 
-            kind = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom));
+            kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
 
             if (kind != ADQLGeometry.Kind.POINT) {
                 throw new UDFArgumentTypeException(0,
@@ -100,7 +98,7 @@ public class UDFBox extends GenericUDF {
             }
 
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords = (List<DoubleWritable>) geomOI.getField(geom);
+            List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
 
             raArg = coords.get(0);
             decArg = coords.get(1);

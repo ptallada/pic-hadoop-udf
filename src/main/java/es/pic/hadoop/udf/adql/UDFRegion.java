@@ -14,7 +14,6 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.ByteWritable;
 import org.apache.hadoop.io.BytesWritable;
@@ -39,7 +38,6 @@ public class UDFRegion extends GenericUDF {
     Converter orderConverter;
 
     final static byte DEFAULT_ORDER = 10;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
     final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
 
     Object geom;
@@ -63,10 +61,10 @@ public class UDFRegion extends GenericUDF {
         Pointing pt;
         RangeSet rs;
 
-        ADQLGeometry.Kind kind = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom));
+        ADQLGeometry.Kind kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
 
         if (kind == ADQLGeometry.Kind.REGION) {
-            BytesWritable bytes = (BytesWritable) geomOI.getField(geom);
+            BytesWritable bytes = (BytesWritable) ADQLGeometry.OI.getField(geom);
 
             try {
                 return Moc.fromCompressed(bytes.getBytes());
@@ -76,7 +74,7 @@ public class UDFRegion extends GenericUDF {
         }
 
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) geomOI.getField(geom);
+        List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
 
         switch (kind) {
         case CIRCLE:
@@ -124,7 +122,7 @@ public class UDFRegion extends GenericUDF {
             throw new UDFArgumentLengthException("This function takes 2 arguments at most: geometry, [order]");
         }
 
-        if (arguments[0] != geomOI) {
+        if (arguments[0] != ADQLGeometry.OI) {
             throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
         }
 
@@ -135,7 +133,7 @@ public class UDFRegion extends GenericUDF {
             order = DEFAULT_ORDER;
         }
 
-        return geomOI;
+        return ADQLGeometry.OI;
     }
 
     @Override

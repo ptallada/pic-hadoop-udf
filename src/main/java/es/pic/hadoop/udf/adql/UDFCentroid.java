@@ -1,7 +1,6 @@
 package es.pic.hadoop.udf.adql;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.geometry.S2LatLng;
@@ -17,7 +16,6 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 
 // @formatter:off
 @Description(
@@ -31,23 +29,20 @@ import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspecto
 )
 // @formatter:on
 public class UDFCentroid extends GenericUDF {
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
-
     Object geom;
     ADQLGeometry.Kind kind;
-    Object centroid;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 1) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "Argument has to be of ADQL geometry type.");
             }
         } else {
             throw new UDFArgumentLengthException("This function takes a single argument: geometry");
         }
 
-        return geomOI;
+        return ADQLGeometry.OI;
     }
 
     @Override
@@ -58,7 +53,7 @@ public class UDFCentroid extends GenericUDF {
             return null;
         }
 
-        kind = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom));
+        kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
 
         switch (kind) {
         case POINT:
@@ -66,16 +61,13 @@ public class UDFCentroid extends GenericUDF {
 
         case CIRCLE:
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> circle_coords = (List<DoubleWritable>) geomOI.getField(geom);
+            List<DoubleWritable> circle_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
 
-            centroid = geomOI.create();
-            geomOI.setFieldAndTag(centroid, circle_coords.subList(0, 2), ADQLGeometry.Kind.POINT.tag);
-
-            return centroid;
+            return new ADQLPoint(circle_coords.subList(0, 2)).serialize();
 
         case POLYGON:
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> poly_coords = (List<DoubleWritable>) geomOI.getField(geom);
+            List<DoubleWritable> poly_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
             List<S2Point> points = new ArrayList<S2Point>();
 
             double ra;
@@ -90,14 +82,7 @@ public class UDFCentroid extends GenericUDF {
             S2Loop loop = new S2Loop(points);
             S2LatLng point = new S2LatLng(loop.getCentroid());
 
-            List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                    new DoubleWritable(point.lngDegrees()), new DoubleWritable(point.latDegrees())
-            });
-
-            centroid = geomOI.create();
-            geomOI.setFieldAndTag(centroid, coords, ADQLGeometry.Kind.POINT.tag);
-
-            return centroid;
+            return new ADQLPoint(point.lngDegrees(), point.latDegrees()).serialize();
 
         case REGION:
         default:

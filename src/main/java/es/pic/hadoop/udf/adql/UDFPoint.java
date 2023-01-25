@@ -10,7 +10,6 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.LongWritable;
 
@@ -32,7 +31,6 @@ import healpix.essentials.Pointing;
 public class UDFPoint extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
     final static ObjectInspector longOI = PrimitiveObjectInspectorFactory.writableLongObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Converter raConverter;
     Converter decConverter;
@@ -60,7 +58,7 @@ public class UDFPoint extends GenericUDF {
             throw new UDFArgumentLengthException("This function takes 1 or 2 arguments: either (ipix) or (ra, dec)");
         }
 
-        return geomOI;
+        return ADQLGeometry.OI;
     }
 
     @Override
