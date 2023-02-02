@@ -23,8 +23,6 @@ public class TestCentroid {
 
     UDFCentroid udf = new UDFCentroid();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     Object point;
     Object circle;
     Object polygon;
@@ -72,7 +70,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null)
@@ -85,7 +83,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point),
@@ -98,7 +96,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("0:[10.0, 20.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle),
@@ -111,7 +109,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("0:[14.999999999999977, 15.014819855438457]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon),
@@ -124,7 +122,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(UnsupportedOperationException.class, () -> udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region),

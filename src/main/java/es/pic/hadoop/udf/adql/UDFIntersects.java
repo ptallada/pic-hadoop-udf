@@ -21,8 +21,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
-import healpix.essentials.Moc;
-
 // @formatter:off
 @Description(
     name = "intersects",
@@ -53,6 +51,8 @@ public class UDFIntersects extends GenericUDF {
     S2Cap circle2;
     S2Loop polygon1;
     S2Loop polygon2;
+    ADQLRegion region1;
+    ADQLRegion region2;
 
     List<DoubleWritable> tmp;
     List<S2Point> vertices;
@@ -86,7 +86,10 @@ public class UDFIntersects extends GenericUDF {
         kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
 
         if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
-            throw new UnsupportedOperationException("Operations on regions are not yet supported");
+            region1 = ADQLGeometry.fromBlob(geom1).toRegion();
+            region2 = ADQLGeometry.fromBlob(geom2).toRegion();
+
+            return new BooleanWritable(region1.intersects(region2));
         }
 
         @SuppressWarnings("unchecked")
@@ -184,7 +187,7 @@ public class UDFIntersects extends GenericUDF {
 
             return new BooleanWritable(polygon2.contains(point1) || polygon2.getDistance(point1).degrees() <= radius);
 
-        } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
+        } else { // (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
             // POLYGON overlaps POLYGON
             double ra;
             double dec;
@@ -207,11 +210,6 @@ public class UDFIntersects extends GenericUDF {
 
             return new BooleanWritable(polygon2.intersects(polygon1));
 
-        } else { // (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION)
-            Moc region1 = UDFRegion.fromGeometry(geom1);
-            Moc region2 = UDFRegion.fromGeometry(geom1);
-
-            return new BooleanWritable(region1.overlaps(region2));
         }
     }
 

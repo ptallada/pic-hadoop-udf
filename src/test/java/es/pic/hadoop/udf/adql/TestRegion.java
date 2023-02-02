@@ -13,6 +13,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.ByteWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -23,17 +24,23 @@ public class TestRegion {
 
     UDFRegion udf = new UDFRegion();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     Object point;
     Object circle;
     Object polygon;
     Object region;
 
+    Object invalid_point;
+    Object invalid_circle;
+    Object invalid_polygon;
+
     public TestRegion() throws HiveException {
         point = new ADQLPoint(0, 0).serialize();
         circle = new ADQLCircle(1, 1, 1).serialize();
         polygon = new ADQLPolygon(-8, -3, 2, -3, 3, 3, -8, 3).serialize();
+
+        invalid_point = new ADQLPoint(0, 200).serialize();
+        invalid_circle = new ADQLCircle(0, 200, 400).serialize();
+        invalid_polygon = new ADQLPolygon(-8, -3, 2, -3, 3, 3, -8).serialize();
 
         Moc moc = new Moc();
         moc.addPixelRange(3, 23, 34);
@@ -73,7 +80,7 @@ public class TestRegion {
                 ADQLGeometry.OI
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null)
@@ -81,15 +88,15 @@ public class TestRegion {
     }
 
     @Test
-    void invalidGeoms() throws HiveException {
+    void nullOrder() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                ADQLGeometry.OI
+                ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableByteObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point)
+        assertNull(udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point), new DeferredJavaObject(null)
         }));
     }
 
@@ -99,9 +106,12 @@ public class TestRegion {
                 ADQLGeometry.OI
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(819556010, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(827959434, udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point)
+        }).hashCode());
+        assertEquals(-835085321, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle)
         }).hashCode());
         assertEquals(780344799, udf.evaluate(new DeferredJavaObject[] {
@@ -109,6 +119,41 @@ public class TestRegion {
         }).hashCode());
         assertEquals(35731649, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region)
+        }).hashCode());
+    }
+
+    @Test
+    void validGeomsOrder() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableByteObjectInspector,
+        };
+
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
+
+        assertEquals(36646715, udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point), new DeferredJavaObject(new ByteWritable((byte) 3))
+        }).hashCode());
+        assertEquals(28, udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle), new DeferredJavaObject(new ByteWritable((byte) 3))
+        }).hashCode());
+        assertEquals(1193292115, udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(polygon), new DeferredJavaObject(new ByteWritable((byte) 3))
+        }).hashCode());
+        assertEquals(35731649, udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region), new DeferredJavaObject(new ByteWritable((byte) 3))
+        }).hashCode());
+    }
+
+    @Test
+    void invalidGeoms() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                ADQLGeometry.OI
+        };
+
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
+
+        assertThrows(HiveException.class, () -> udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(invalid_point)
         }).hashCode());
     }
 

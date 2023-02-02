@@ -68,7 +68,7 @@ public class UDFCentroid extends GenericUDF {
         case POLYGON:
             @SuppressWarnings("unchecked")
             List<DoubleWritable> poly_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
-            List<S2Point> points = new ArrayList<S2Point>();
+            List<S2Point> vertices = new ArrayList<S2Point>();
 
             double ra;
             double dec;
@@ -76,10 +76,10 @@ public class UDFCentroid extends GenericUDF {
             for (int i = 0; i < poly_coords.size(); i += 2) {
                 ra = poly_coords.get(i).get();
                 dec = poly_coords.get(i + 1).get();
-                points.add(S2LatLng.fromDegrees(dec, ra).toPoint());
+                vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
 
-            S2Loop loop = new S2Loop(points);
+            S2Loop loop = new S2Loop(vertices);
             S2LatLng point = new S2LatLng(loop.getCentroid());
 
             return new ADQLPoint(point.lngDegrees(), point.latDegrees()).serialize();

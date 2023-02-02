@@ -34,7 +34,9 @@ public class TestContains {
     Object polygon1;
     Object polygon2;
     Object polygon3;
-    Object region;
+    Object region1;
+    Object region2;
+    Object region3;
 
     public TestContains() throws HiveException {
         point1 = new ADQLPoint(-4, 0).serialize();
@@ -50,8 +52,16 @@ public class TestContains {
         polygon3 = new ADQLPolygon(-1, 2, 1, 2, 1, 4, -1, 4).serialize();
 
         Moc moc = new Moc();
-        moc.addPixelRange(3, 23, 34);
-        region = new ADQLRegion(moc).serialize();
+        moc.addPixelRange(3, 1, 10);
+        region1 = new ADQLRegion(moc).serialize();
+
+        moc = new Moc();
+        moc.addPixelRange(3, 45, 50);
+        region2 = new ADQLRegion(moc).serialize();
+
+        moc = new Moc();
+        moc.addPixelRange(3, 40, 750);
+        region3 = new ADQLRegion(moc).serialize();
     }
 
     @Test
@@ -121,7 +131,7 @@ public class TestContains {
                 new DeferredJavaObject(polygon1), new DeferredJavaObject(point2)
         }));
         assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(region), new DeferredJavaObject(point2)
+                new DeferredJavaObject(region1), new DeferredJavaObject(point2)
         }));
     }
 
@@ -133,27 +143,47 @@ public class TestContains {
 
         assertEquals(udf.initialize(params), outputOI);
 
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+            new DeferredJavaObject(point1), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point2), new DeferredJavaObject(region1)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+            new DeferredJavaObject(circle2), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle3), new DeferredJavaObject(region1)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+            new DeferredJavaObject(polygon2), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(polygon3), new DeferredJavaObject(region1)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+            new DeferredJavaObject(region2), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region1), new DeferredJavaObject(region2)
+        }).toString());
+
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(circle2)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(circle3)
         }).toString());
+
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(polygon1)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(polygon3)
-        }).toString());
-
-        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point1), new DeferredJavaObject(region)
-        }).toString());
-        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point2), new DeferredJavaObject(region)
-        }).toString());
-        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point3), new DeferredJavaObject(region)
         }).toString());
 
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
@@ -162,18 +192,21 @@ public class TestContains {
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle1), new DeferredJavaObject(circle3)
         }).toString());
+
         // assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
         //         new DeferredJavaObject(circle1), new DeferredJavaObject(polygon1)
         // }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle1), new DeferredJavaObject(polygon3)
         }).toString());
+
         // assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
         //         new DeferredJavaObject(polygon3), new DeferredJavaObject(circle2)
         // }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon3), new DeferredJavaObject(circle3)
         }).toString());
+
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon2), new DeferredJavaObject(polygon1)
         }).toString());

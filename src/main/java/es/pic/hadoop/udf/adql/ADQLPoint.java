@@ -3,11 +3,17 @@ package es.pic.hadoop.udf.adql;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+
+import healpix.essentials.HealpixBase;
+import healpix.essentials.HealpixProc;
+import healpix.essentials.Moc;
+import healpix.essentials.Pointing;
 
 public class ADQLPoint extends ADQLGeometry {
 
-    List<DoubleWritable> coords;
+    protected List<DoubleWritable> coords;
 
     public ADQLPoint(double ra, double dec) {
         this.coords = Arrays.asList(new DoubleWritable[] {
@@ -19,6 +25,13 @@ public class ADQLPoint extends ADQLGeometry {
         this.coords = coords;
     }
 
+    protected static ADQLPoint fromBlob(Object blob) {
+        @SuppressWarnings("unchecked")
+        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
+
+        return new ADQLPoint(coords);
+    }
+
     public double getRa() {
         return this.coords.get(0).get();
     }
@@ -28,8 +41,36 @@ public class ADQLPoint extends ADQLGeometry {
     }
 
     @Override
+    public ADQLGeometry complement() throws HiveException{
+        throw new UnsupportedOperationException("Point geometry has no complement.");
+    }
+
+    @Override
     public double area() {
         return 0;
+    }
+
+    public ADQLRegion toRegion() throws HiveException {
+        return toRegion((byte) HealpixBase.order_max);
+    }
+
+    public ADQLRegion toRegion(byte order) throws HiveException {
+        double theta = Math.toRadians(this.getDec());
+        double phi = Math.toRadians(this.getRa());
+
+        Pointing pt = new Pointing(theta, phi);
+
+        long ipix;
+        try {
+            ipix = HealpixProc.ang2pixNest(order, pt);
+        } catch (Exception e) {
+            throw new HiveException(e);
+        }
+
+        Moc moc = new Moc();
+        moc.addPixel(order, ipix);
+
+        return new ADQLRegion(moc);
     }
 
     public Object serialize() {

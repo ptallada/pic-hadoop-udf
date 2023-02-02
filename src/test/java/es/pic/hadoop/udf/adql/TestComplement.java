@@ -8,19 +8,35 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Arrays;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
+import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.LongWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestPoint {
+import healpix.essentials.Moc;
 
-    UDFPoint udf = new UDFPoint();
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+public class TestComplement {
+
+    UDFComplement udf = new UDFComplement();
+
+    Object point;
+    Object circle;
+    Object polygon;
+    Object region;
+
+    public TestComplement() throws HiveException {
+        point = new ADQLPoint(10, 20).serialize();
+        circle = new ADQLCircle(10, 20, 30).serialize();
+        polygon = new ADQLPolygon(10, 10, 20, 10, 20, 20, 10, 20).serialize();
+
+        Moc moc = new Moc();
+        moc.addPixelRange(3, 23, 34);
+        region = new ADQLRegion(moc).serialize();
+    }
 
     @Test
     void emptyArguments() {
@@ -33,17 +49,25 @@ public class TestPoint {
         ObjectInspector[] params = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
                 PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
-        assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 3)));
+        assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 2)));
     }
 
     @Test
-    void nullPixel() throws HiveException {
+    void wrongTypeOfArguments() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+        };
+
+        assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(params));
+    }
+
+    @Test
+    void nullGeometry() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                ADQLGeometry.OI,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
@@ -54,62 +78,54 @@ public class TestPoint {
     }
 
     @Test
-    void nullCoords() throws HiveException {
+    void validPoint() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                ADQLGeometry.OI,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(20))
-        }));
-        assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(20)), new DeferredJavaObject(null),
-        }));
-        assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(null), new DeferredJavaObject(null),
+        assertThrows(UnsupportedOperationException.class, () -> udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point),
         }));
     }
 
     @Test
-    void invalidPixel() throws HiveException {
+    void validCircle() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
+                ADQLGeometry.OI,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertThrows(HiveException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new LongWritable(-1)),
-        }));
-    }
-
-    @Test
-    void validPixels() throws HiveException {
-        ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
-        };
-
-        assertEquals(udf.initialize(params), ADQLGeometry.OI);
-
-        assertEquals("0:[45.0, 7.114779521089076E-8]", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new LongWritable(0)),
+        assertEquals("1:[190.0, -20.0, 150.0]", udf.evaluate(new DeferredJavaObject[] {
+            new DeferredJavaObject(circle),
         }).toString());
     }
 
     @Test
-    void validDoubleCoords() throws HiveException {
+    void validPolygon() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                ADQLGeometry.OI,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("0:[0.0, 0.0]", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+        assertEquals("2:[10.0, 20.0, 20.0, 20.0, 20.0, 10.0, 10.0, 10.0]", udf.evaluate(new DeferredJavaObject[] {
+            new DeferredJavaObject(polygon),
+        }).toString());
+    }
+
+    @Test
+    void validRegion() throws HiveException {
+        ObjectInspector[] params = new ObjectInspector[] {
+                ADQLGeometry.OI,
+        };
+
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
+
+        assertEquals("3:0a 34 01 00 0c 00 2c 0a", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region),
         }).toString());
     }
 

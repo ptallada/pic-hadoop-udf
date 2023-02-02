@@ -21,10 +21,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
-import healpix.essentials.HealpixBase;
-import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
-import healpix.essentials.Pointing;
 
 // @formatter:off
 @Description(
@@ -58,8 +55,9 @@ public class UDFContains extends GenericUDF {
     S1Angle radius;
     S2Loop polygon1;
     S2Loop polygon2;
-    Moc region1;
-    Moc region2;
+    Moc moc1;
+    ADQLRegion region1;
+    ADQLRegion region2;
 
     List<S2Point> vertices;
 
@@ -93,35 +91,14 @@ public class UDFContains extends GenericUDF {
 
         if (kind2 == ADQLGeometry.Kind.POINT) {
             throw new UDFArgumentTypeException(1, "Second geometry cannot be a POINT.");
-
-        } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.REGION) {
-            // POINT inside REGION
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
-
-            theta = Math.toRadians(90 - coords1.get(1).get());
-            phi = Math.toRadians(coords1.get(0).get());
-
-            try {
-                ipix = HealpixProc.ang2pixNest(HealpixBase.order_max, new Pointing(theta, phi));
-            } catch (Exception e) {
-                throw new HiveException(e);
-            }
-
-            region1 = new Moc();
-            region1.addPixel(HealpixBase.order_max, ipix);
-
-            region2 = UDFRegion.fromGeometry(geom2);
+        } 
+        
+        if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
+            // REGION combined with POINT, CIRCLE, POLYGON or another REGION
+            region1 = ADQLGeometry.fromBlob(geom1).toRegion();
+            region2 = ADQLGeometry.fromBlob(geom2).toRegion();
 
             return new BooleanWritable(region2.contains(region1));
-
-        } else if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
-            // REGION combined with CIRCLE, POLYGON or REGION, in any order
-            Moc region1 = UDFRegion.fromGeometry(geom1);
-            Moc region2 = UDFRegion.fromGeometry(geom2);
-
-            return new BooleanWritable(region2.contains(region1));
-
         }
 
         @SuppressWarnings("unchecked")
@@ -129,10 +106,7 @@ public class UDFContains extends GenericUDF {
         @SuppressWarnings("unchecked")
         List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
 
-        if (kind2 == ADQLGeometry.Kind.POINT) {
-            throw new UDFArgumentTypeException(1, "Second geometry cannot be a POINT.");
-
-        } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
+        if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
             // POINT inside CIRCLE
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
             point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
@@ -232,7 +206,6 @@ public class UDFContains extends GenericUDF {
             polygon2 = new S2Loop(vertices);
 
             return new BooleanWritable(polygon2.containsNested(polygon1));
-
         }
     }
 

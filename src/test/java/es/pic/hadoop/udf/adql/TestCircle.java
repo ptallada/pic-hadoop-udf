@@ -22,8 +22,6 @@ public class TestCircle {
 
     UDFCircle udf = new UDFCircle();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     Object point;
     Object circle;
 
@@ -68,7 +66,7 @@ public class TestCircle {
                 ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         // Both arguments are null
         assertNull(udf.evaluate(new DeferredJavaObject[] {
@@ -94,7 +92,7 @@ public class TestCircle {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(null), new DeferredJavaObject(null)
@@ -131,7 +129,7 @@ public class TestCircle {
                 ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new DoubleWritable(30)),
@@ -144,7 +142,7 @@ public class TestCircle {
                 ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("1:[10.0, 20.0, 30.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(30)),
@@ -159,7 +157,7 @@ public class TestCircle {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("1:[10.0, 20.0, 30.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),
