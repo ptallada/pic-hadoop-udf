@@ -14,13 +14,7 @@ public class UDAFIntersection extends AbstractUDAFRegionResolver {
     public static class UDAFRegionIntersectionEvaluator extends AbstractUDAFRegionEvaluator {
 
         @Override
-        public void doMerge(RegionAggregationBuffer agg, Object partial) throws HiveException {
-            if (partial == null) {
-                return;
-            }
-
-            ADQLRegion region = ADQLRegion.fromBlob(partial);
-
+        public void doMerge(RegionAggregationBuffer agg, ADQLRegion region) throws HiveException {
             if (agg.moc == null) {
                 agg.moc = new Moc(region.moc);
             } else {

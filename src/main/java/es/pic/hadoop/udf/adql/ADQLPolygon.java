@@ -9,6 +9,7 @@ import com.google.common.geometry.S2Point;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
 
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
@@ -31,6 +32,10 @@ public class ADQLPolygon extends ADQLGeometry {
     }
 
     protected static ADQLPolygon fromBlob(Object blob) {
+        return fromBlob(blob, OI);
+    }
+
+    protected static ADQLPolygon fromBlob(Object blob, UnionObjectInspector OI) {
         @SuppressWarnings("unchecked")
         List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
 
@@ -38,14 +43,14 @@ public class ADQLPolygon extends ADQLGeometry {
     }
 
     @Override
-    public ADQLPolygon complement() throws HiveException{
+    public ADQLPolygon complement() throws HiveException {
         List<DoubleWritable> coords = new ArrayList<DoubleWritable>(this.coords.size());
-        
-        for (int i=this.coords.size()-2; i>=0; i-=2) {
+
+        for (int i = this.coords.size() - 2; i >= 0; i -= 2) {
             coords.add(this.coords.get(i));
-            coords.add(this.coords.get(i+1));
+            coords.add(this.coords.get(i + 1));
         }
-                
+
         return new ADQLPolygon(coords);
     }
 
@@ -88,7 +93,7 @@ public class ADQLPolygon extends ADQLGeometry {
         }
 
         Moc moc = new Moc(rs, order);
-        
+
         return new ADQLRegion(moc);
     }
 

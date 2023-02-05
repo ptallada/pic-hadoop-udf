@@ -8,6 +8,8 @@ import org.apache.hadoop.hive.ql.udf.generic.AbstractGenericUDAFResolver;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
 import healpix.essentials.Moc;
@@ -49,6 +51,8 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
             Moc moc = null;
         }
 
+        protected UnionObjectInspector inputOI;
+
         protected boolean isAllColumns;
         protected boolean isDistinct;
         protected boolean isWindowing;
@@ -69,13 +73,15 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
         public ObjectInspector init(Mode m, ObjectInspector[] parameters) throws HiveException {
             super.init(m, parameters);
 
-            if (parameters.length == 1) {
-                if (parameters[0] != ADQLGeometry.OI) {
-                    throw new UDFArgumentTypeException(0, "The argument has to be of ADQL geometry type.");
-                }
-            } else {
+            if (parameters.length != 1) {
                 throw new UDFArgumentLengthException("This function takes only one argument: region");
             }
+
+            if (!ObjectInspectorUtils.compareTypes(parameters[0], ADQLGeometry.OI)) {
+                throw new UDFArgumentTypeException(0, "The argument has to be of ADQL geometry type.");
+            }
+
+            inputOI = (UnionObjectInspector) parameters[0];
 
             return ADQLGeometry.OI;
         }
@@ -90,7 +96,7 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
             ((RegionAggregationBuffer) agg).moc = null;
         }
 
-        protected abstract void doMerge(RegionAggregationBuffer buff, Object partial) throws HiveException;
+        protected abstract void doMerge(RegionAggregationBuffer buff, ADQLRegion region) throws HiveException;
 
         @Override
         public void iterate(AggregationBuffer buff, Object[] parameters) throws HiveException {
@@ -99,16 +105,26 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
                         String.format("A single parameter was expected, got %d instead.", parameters.length));
             }
 
-            RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
+            if (parameters[0] == null) {
+                return;
+            }
 
-            doMerge(agg, parameters[0]);
+            RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
+            ADQLRegion region = ADQLRegion.fromBlob(parameters[0], inputOI);
+
+            doMerge(agg, region);
         }
 
         @Override
         public void merge(AggregationBuffer buff, Object partial) throws HiveException {
-            RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
+            if (partial == null) {
+                return;
+            }
 
-            doMerge(agg, partial);
+            RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
+            ADQLRegion region = ADQLRegion.fromBlob(partial, inputOI);
+
+            doMerge(agg, region);
         }
 
         @Override

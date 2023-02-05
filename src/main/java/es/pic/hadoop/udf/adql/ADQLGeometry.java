@@ -8,6 +8,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 public abstract class ADQLGeometry {
@@ -60,6 +61,10 @@ public abstract class ADQLGeometry {
     }
 
     protected static ADQLGeometry fromBlob(Object blob) throws HiveException {
+        return fromBlob(blob, OI);
+    }
+
+    protected static ADQLGeometry fromBlob(Object blob, UnionObjectInspector OI) throws HiveException {
         Kind kind = Kind.valueOfTag(OI.getTag(blob));
 
         switch (kind) {

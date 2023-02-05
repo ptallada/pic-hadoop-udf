@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
 
 import healpix.essentials.HealpixBase;
 import healpix.essentials.HealpixProc;
@@ -26,6 +27,10 @@ public class ADQLPoint extends ADQLGeometry {
     }
 
     protected static ADQLPoint fromBlob(Object blob) {
+        return fromBlob(blob, OI);
+    }
+
+    protected static ADQLPoint fromBlob(Object blob, UnionObjectInspector OI) {
         @SuppressWarnings("unchecked")
         List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
 
@@ -41,7 +46,7 @@ public class ADQLPoint extends ADQLGeometry {
     }
 
     @Override
-    public ADQLGeometry complement() throws HiveException{
+    public ADQLGeometry complement() throws HiveException {
         throw new UnsupportedOperationException("Point geometry has no complement.");
     }
 

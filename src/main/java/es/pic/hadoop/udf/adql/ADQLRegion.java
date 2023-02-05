@@ -1,6 +1,7 @@
 package es.pic.hadoop.udf.adql;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
 import org.apache.hadoop.io.BytesWritable;
 
 import healpix.essentials.Moc;
@@ -16,6 +17,10 @@ public class ADQLRegion extends ADQLGeometry {
     }
 
     protected static ADQLRegion fromBlob(Object blob) throws HiveException {
+        return fromBlob(blob, OI);
+    }
+
+    protected static ADQLRegion fromBlob(Object blob, UnionObjectInspector OI) throws HiveException {
         byte[] bytes = ((BytesWritable) OI.getField(blob)).getBytes();
         Moc moc;
 
@@ -29,7 +34,7 @@ public class ADQLRegion extends ADQLGeometry {
     }
 
     @Override
-    public ADQLRegion complement() throws HiveException{
+    public ADQLRegion complement() throws HiveException {
         return new ADQLRegion(this.moc.complement());
     }
 
@@ -59,10 +64,10 @@ public class ADQLRegion extends ADQLGeometry {
     public Object serialize() throws HiveException {
         Object blob = OI.create();
         byte[] bytes;
-        
+
         try {
             bytes = moc.toCompressed();
-        } catch  (Exception e) {
+        } catch (Exception e) {
             throw new HiveException(e);
         }
 
