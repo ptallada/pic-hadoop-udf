@@ -6,7 +6,7 @@
   <groupId>es.pic.hadoop</groupId>
   <artifactId>pic-hadoop-udf</artifactId>
   <packaging>jar</packaging>
-  <version>4.1.0-1</version>
+  <version>4.2.0-1</version>
   <name>hive-udf</name>
   <url>http://maven.apache.org</url>
 
@@ -36,7 +36,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.2</version>
+        <version>0.8.6</version>
         <executions>
             <execution>
                 <goals>
@@ -118,14 +118,14 @@
   </dependencies>
 
   <repositories>
-    <repository>
+    <!--<repository>
       <id>hdp-releases</id>
       <url>https://repo.hortonworks.com/content/repositories/releases/</url>
     </repository>
     <repository>
       <id>hdp-public</id>
       <url>https://repo.hortonworks.com/content/groups/public/</url>
-    </repository>
+    </repository>-->
     <repository>
       <id>maven</id>
       <url>https://repo1.maven.org/maven2/</url>

@@ -7,26 +7,20 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
 @Description(
-    name = "area",
-    value = "_FUNC_(geom) -> area:double",
-    extended = "Compute the area, in square degrees, of a given geometry."
+    name = "complement",
+    value = "_FUNC_(region:ADQLRegion) -> region:ADQLRegion",
+    extended = "Return the complement of an ADQL region."
 )
 @UDFType(
     deterministic = true,
     stateful = false
 )
 // @formatter:on
-public class UDFArea extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-
-    double ra;
-    double dec;
+public class UDFComplement extends GenericUDF {
 
     Object blob;
     ADQLGeometry geom;
@@ -35,13 +29,13 @@ public class UDFArea extends GenericUDF {
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 1) {
             if (arguments[0] != ADQLGeometry.OI) {
-                throw new UDFArgumentTypeException(0, "Argument has to be of ADQL geometry type.");
+                throw new UDFArgumentTypeException(0, "The argument has to be of ADQL geometry type.");
             }
         } else {
-            throw new UDFArgumentLengthException("This function takes a single argument: geometry");
+            throw new UDFArgumentLengthException("This function takes 1 arguments: region");
         }
 
-        return doubleOI;
+        return ADQLGeometry.OI;
     }
 
     @Override
@@ -54,11 +48,11 @@ public class UDFArea extends GenericUDF {
 
         geom = ADQLGeometry.fromBlob(blob);
 
-        return new DoubleWritable(geom.area());
+        return geom.complement().serialize();
     }
 
     @Override
     public String getDisplayString(String[] children) {
-        return getStandardDisplayString("area", children);
+        return getStandardDisplayString("complement", children);
     }
 }

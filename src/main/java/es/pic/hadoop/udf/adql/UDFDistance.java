@@ -15,7 +15,6 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -31,7 +30,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 // @formatter:on
 public class UDFDistance extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Converter ra1Converter;
     Converter dec1Converter;
@@ -51,11 +49,11 @@ public class UDFDistance extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
-            if (arguments[1] != geomOI) {
-                throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
+            if (arguments[1] != ADQLGeometry.OI) {
+                throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else if (arguments.length == 4) {
             ra1Converter = ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
@@ -80,22 +78,22 @@ public class UDFDistance extends GenericUDF {
                 return null;
             }
 
-            kind1 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom1));
-            kind2 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom2));
+            kind1 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom1));
+            kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
 
             if (kind1 != ADQLGeometry.Kind.POINT) {
                 throw new UDFArgumentTypeException(0,
                         String.format("First geometry is not a POINT, but a %s.", kind1.name()));
             }
             if (kind2 != ADQLGeometry.Kind.POINT) {
-                throw new UDFArgumentTypeException(0,
+                throw new UDFArgumentTypeException(1,
                         String.format("Second geometry is not a POINT, but a %s.", kind2.name()));
             }
 
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords1 = (List<DoubleWritable>) geomOI.getField(geom1);
+            List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords2 = (List<DoubleWritable>) geomOI.getField(geom2);
+            List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
 
             ra1Arg = coords1.get(0);
             dec1Arg = coords1.get(1);

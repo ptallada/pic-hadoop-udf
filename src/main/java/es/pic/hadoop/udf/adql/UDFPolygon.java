@@ -14,7 +14,6 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -30,7 +29,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 // @formatter:on
 public class UDFPolygon extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     List<Converter> coordConverters;
     List<DoubleWritable> coordArgs;
@@ -53,7 +51,7 @@ public class UDFPolygon extends GenericUDF {
             for (int i = 0; i < arguments.length; i++) {
                 oi = arguments[i];
 
-                if (oi == geomOI) {
+                if (oi == ADQLGeometry.OI) {
                     has_points = true;
                 } else {
                     has_coords = true;
@@ -80,7 +78,7 @@ public class UDFPolygon extends GenericUDF {
                     "If less than 6 arguments are provided, they all must be ADQLGeometry.");
         }
 
-        return geomOI;
+        return ADQLGeometry.OI;
     }
 
     @Override
@@ -104,7 +102,7 @@ public class UDFPolygon extends GenericUDF {
                     return null;
                 }
 
-                kind = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom));
+                kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
 
                 if (kind != ADQLGeometry.Kind.POINT) {
                     throw new UDFArgumentTypeException(i,
@@ -112,17 +110,14 @@ public class UDFPolygon extends GenericUDF {
                 }
 
                 @SuppressWarnings("unchecked")
-                List<DoubleWritable> coords = (List<DoubleWritable>) geomOI.getField(geom);
+                List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
 
                 coordArgs.add(coords.get(0));
                 coordArgs.add(coords.get(1));
             }
         }
 
-        polygon = geomOI.create();
-        geomOI.setFieldAndTag(polygon, coordArgs, ADQLGeometry.Kind.POLYGON.tag);
-
-        return polygon;
+        return new ADQLPolygon(coordArgs).serialize();
     }
 
     @Override

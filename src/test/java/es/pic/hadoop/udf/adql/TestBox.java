@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -23,23 +22,12 @@ public class TestBox {
 
     UDFBox udf = new UDFBox();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     Object point;
     Object circle;
 
     public TestBox() {
-        List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20)
-        });
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords, ADQLGeometry.Kind.POINT.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30)
-        });
-        circle = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        point = new ADQLPoint(10, 20).serialize();
+        circle = new ADQLCircle(10, 20, 30).serialize();
     }
 
     @Test
@@ -82,7 +70,7 @@ public class TestBox {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
@@ -107,7 +95,7 @@ public class TestBox {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
@@ -134,7 +122,7 @@ public class TestBox {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new DoubleWritable(0)),
@@ -149,10 +137,10 @@ public class TestBox {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[7.5, 17.0, 12.5, 17.0, 12.5, 23.0, 7.5, 23.0]", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(5)),
+        assertEquals("2:[8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0]", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(4)),
                 new DeferredJavaObject(new DoubleWritable(6)),
         }).toString());
     }
@@ -166,11 +154,11 @@ public class TestBox {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[7.5, 17.0, 12.5, 17.0, 12.5, 23.0, 7.5, 23.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("2:[8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),
-                new DeferredJavaObject(new DoubleWritable(5)), new DeferredJavaObject(new DoubleWritable(6)),
+                new DeferredJavaObject(new DoubleWritable(4)), new DeferredJavaObject(new DoubleWritable(6)),
         }).toString());
     }
 

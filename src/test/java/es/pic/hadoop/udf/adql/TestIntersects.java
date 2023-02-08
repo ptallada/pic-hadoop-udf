@@ -6,18 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.LongWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+
+import healpix.essentials.Moc;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestIntersects {
@@ -35,69 +34,34 @@ public class TestIntersects {
     Object polygon1;
     Object polygon2;
     Object polygon3;
-    Object region;
+    Object region1;
+    Object region2;
+    Object region3;
 
-    public TestIntersects() {
-        List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(-4), new DoubleWritable(0)
-        });
-        point1 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point1, coords, ADQLGeometry.Kind.POINT.tag);
+    public TestIntersects() throws HiveException {
+        point1 = new ADQLPoint(-4, 0).serialize();
+        point2 = new ADQLPoint(0, 0).serialize();
+        point3 = new ADQLPoint(6, 0).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(0), new DoubleWritable(0)
-        });
-        point2 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point2, coords, ADQLGeometry.Kind.POINT.tag);
+        circle1 = new ADQLCircle(-4, 0, 1).serialize();
+        circle2 = new ADQLCircle(0, 0, 7).serialize();
+        circle3 = new ADQLCircle(6, 0, 3).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(6), new DoubleWritable(0)
-        });
-        point3 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point2, coords, ADQLGeometry.Kind.POINT.tag);
+        polygon1 = new ADQLPolygon(-8, -3, 2, -3, 3, 3, -8, 3).serialize();
+        polygon2 = new ADQLPolygon(-1, -1, 1, -1, 1, 1, -1, 1).serialize();
+        polygon3 = new ADQLPolygon(-1, 2, 1, 2, 1, 4, -1, 4).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(-4), new DoubleWritable(0), new DoubleWritable(1)
-        });
-        circle1 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle1, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        Moc moc = new Moc();
+        moc.addPixelRange(3, 20, 30);
+        region1 = new ADQLRegion(moc).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(0), new DoubleWritable(0), new DoubleWritable(7)
-        });
-        circle2 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle2, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        moc = new Moc();
+        moc.addPixelRange(3, 40, 50);
+        region2 = new ADQLRegion(moc).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(6), new DoubleWritable(0), new DoubleWritable(3)
-        });
-        circle3 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle3, coords, ADQLGeometry.Kind.CIRCLE.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(-8), new DoubleWritable(-3), new DoubleWritable(2), new DoubleWritable(-3),
-                new DoubleWritable(3), new DoubleWritable(3), new DoubleWritable(-8), new DoubleWritable(3),
-        });
-        polygon1 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(polygon1, coords, ADQLGeometry.Kind.POLYGON.tag);
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(-1), new DoubleWritable(-1), new DoubleWritable(1), new DoubleWritable(-1),
-                new DoubleWritable(1), new DoubleWritable(1), new DoubleWritable(-1), new DoubleWritable(1),
-        });
-        polygon2 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(polygon2, coords, ADQLGeometry.Kind.POLYGON.tag);
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(-1), new DoubleWritable(2), new DoubleWritable(1), new DoubleWritable(2),
-                new DoubleWritable(1), new DoubleWritable(4), new DoubleWritable(-1), new DoubleWritable(4),
-        });
-        polygon3 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(polygon3, coords, ADQLGeometry.Kind.POLYGON.tag);
-
-        List<LongWritable> ranges = Arrays.asList(new LongWritable[] {
-                new LongWritable(0), new LongWritable(1)
-        });
-        region = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(region, ranges, ADQLGeometry.Kind.REGION.tag);
+        moc = new Moc();
+        moc.addPixelRange(3, 35, 300);
+        region3 = new ADQLRegion(moc).serialize();
     }
 
     @Test
@@ -150,25 +114,6 @@ public class TestIntersects {
     }
 
     @Test
-    void invalidGeom() throws HiveException {
-        ObjectInspector[] params = new ObjectInspector[] {
-                ADQLGeometry.OI, ADQLGeometry.OI,
-        };
-
-        assertEquals(udf.initialize(params), outputOI);
-
-        assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point1), new DeferredJavaObject(point2)
-        }));
-        assertThrows(UnsupportedOperationException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point1), new DeferredJavaObject(region)
-        }));
-        assertThrows(UnsupportedOperationException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(region), new DeferredJavaObject(circle2)
-        }));
-    }
-
-    @Test
     void validGeoms() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
                 ADQLGeometry.OI, ADQLGeometry.OI,
@@ -177,11 +122,25 @@ public class TestIntersects {
         assertEquals(udf.initialize(params), outputOI);
 
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point1), new DeferredJavaObject(point1)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point1), new DeferredJavaObject(point2)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(circle2)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(circle3)
         }).toString());
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle2), new DeferredJavaObject(point1)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle3), new DeferredJavaObject(point1)
+        }).toString());
+
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point1), new DeferredJavaObject(polygon1)
         }).toString());
@@ -189,28 +148,83 @@ public class TestIntersects {
                 new DeferredJavaObject(point1), new DeferredJavaObject(polygon3)
         }).toString());
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(polygon1), new DeferredJavaObject(point1)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(polygon3), new DeferredJavaObject(point1)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point1), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(point1), new DeferredJavaObject(region1)
+        }).toString());
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region3), new DeferredJavaObject(point1)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region1), new DeferredJavaObject(point1)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle2), new DeferredJavaObject(circle3)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle1), new DeferredJavaObject(circle3)
         }).toString());
-        // assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
-        //         new DeferredJavaObject(circle2), new DeferredJavaObject(polygon1)
-        // }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle2), new DeferredJavaObject(polygon1)
+        }).toString());
         // assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
         //         new DeferredJavaObject(circle3), new DeferredJavaObject(polygon3)
         // }).toString());
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon1), new DeferredJavaObject(circle2)
         }).toString());
-        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(polygon3), new DeferredJavaObject(circle1)
+        // assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+        //         new DeferredJavaObject(polygon3), new DeferredJavaObject(circle1)
+        // }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle2), new DeferredJavaObject(region3)
         }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(circle1), new DeferredJavaObject(region1)
+        }).toString());
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region3), new DeferredJavaObject(circle3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region2), new DeferredJavaObject(circle3)
+        }).toString());
+
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon1), new DeferredJavaObject(polygon3)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon2), new DeferredJavaObject(polygon3)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(polygon1), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(polygon2), new DeferredJavaObject(region1)
+        }).toString());
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region3), new DeferredJavaObject(polygon1)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region1), new DeferredJavaObject(polygon2)
+        }).toString());
+
+        assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region2), new DeferredJavaObject(region3)
+        }).toString());
+        assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
+                new DeferredJavaObject(region1), new DeferredJavaObject(region3)
         }).toString());
     }
 

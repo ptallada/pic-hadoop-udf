@@ -18,7 +18,6 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
@@ -35,7 +34,6 @@ import org.apache.hadoop.io.BooleanWritable;
 // @formatter:on
 public class UDFIntersects extends GenericUDF {
     final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Object geom1;
     Object geom2;
@@ -53,17 +51,20 @@ public class UDFIntersects extends GenericUDF {
     S2Cap circle2;
     S2Loop polygon1;
     S2Loop polygon2;
+    ADQLRegion region1;
+    ADQLRegion region2;
 
+    List<DoubleWritable> tmp;
     List<S2Point> vertices;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
-            if (arguments[1] != geomOI) {
-                throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
+            if (arguments[1] != ADQLGeometry.OI) {
+                throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else {
             throw new UDFArgumentLengthException("This function takes 2 arguments: geom1, geom2");
@@ -81,19 +82,38 @@ public class UDFIntersects extends GenericUDF {
             return null;
         }
 
-        kind1 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom1));
-        kind2 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom2));
+        kind1 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom1));
+        kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
 
         if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
-            throw new UnsupportedOperationException("Operations on regions are not yet supported");
+            region1 = ADQLGeometry.fromBlob(geom1).toRegion();
+            region2 = ADQLGeometry.fromBlob(geom2).toRegion();
+
+            return new BooleanWritable(region1.intersects(region2));
         }
 
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords1 = (List<DoubleWritable>) geomOI.getField(geom1);
+        List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords2 = (List<DoubleWritable>) geomOI.getField(geom2);
+        List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
 
-        if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
+        if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.POINT) {
+            // POINT overlaps POINT
+            point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
+            point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
+
+            return new BooleanWritable(point1.equalsPoint(point2));
+
+        }
+        if ((kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE)
+                || (kind1 == ADQLGeometry.Kind.CIRCLE && kind2 == ADQLGeometry.Kind.POINT)) {
+
+            if (kind1 == ADQLGeometry.Kind.CIRCLE) {
+                tmp = coords1;
+                coords1 = coords2;
+                coords2 = tmp;
+            }
+
             // POINT overlaps CIRCLE
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
             point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
@@ -101,7 +121,15 @@ public class UDFIntersects extends GenericUDF {
 
             return new BooleanWritable(circle2.contains(point1));
 
-        } else if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.POLYGON) {
+        } else if ((kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.POLYGON)
+                || (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POINT)) {
+
+            if (kind1 == ADQLGeometry.Kind.POLYGON) {
+                tmp = coords1;
+                coords1 = coords2;
+                coords2 = tmp;
+            }
+
             // POINT overlaps POLYGON
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
 
@@ -125,11 +153,22 @@ public class UDFIntersects extends GenericUDF {
             point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
 
             radius1 = coords1.get(2).get();
-            radius2 = coords1.get(2).get();
+            radius2 = coords2.get(2).get();
 
-            return new BooleanWritable(Math.toDegrees(point1.angle(point2)) <= (radius1 + radius2));
+            circle1 = S2Cap.fromAxisAngle(point1, S1Angle.degrees(radius1));
+            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(radius2));
 
-        } else if (kind1 == ADQLGeometry.Kind.CIRCLE && kind2 == ADQLGeometry.Kind.POLYGON) {
+            return new BooleanWritable(circle1.interiorIntersects(circle2));
+
+        } else if ((kind1 == ADQLGeometry.Kind.CIRCLE && kind2 == ADQLGeometry.Kind.POLYGON)
+                || (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.CIRCLE)) {
+
+            if (kind1 == ADQLGeometry.Kind.POLYGON) {
+                tmp = coords1;
+                coords1 = coords2;
+                coords2 = tmp;
+            }
+
             // CIRCLE overlaps POLYGON
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
             double radius = coords1.get(2).get();
@@ -146,29 +185,9 @@ public class UDFIntersects extends GenericUDF {
 
             polygon2 = new S2Loop(vertices);
 
-            return new BooleanWritable(polygon2.getDistance(point1).degrees() <= radius);
+            return new BooleanWritable(polygon2.contains(point1) || polygon2.getDistance(point1).degrees() <= radius);
 
-        } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.CIRCLE) {
-            // POLYGON overlaps CIRCLE
-            point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
-            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(coords2.get(2).get()));
-
-            double ra;
-            double dec;
-
-            for (int i = 0; i < coords1.size(); i += 2) {
-                ra = coords1.get(i).get();
-                dec = coords1.get(i + 1).get();
-
-                point1 = S2LatLng.fromDegrees(dec, ra).toPoint();
-                if (circle2.contains(point1)) {
-                    return new BooleanWritable(true);
-                }
-            }
-
-            return new BooleanWritable(false);
-
-        } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
+        } else { // (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
             // POLYGON overlaps POLYGON
             double ra;
             double dec;
@@ -191,8 +210,6 @@ public class UDFIntersects extends GenericUDF {
 
             return new BooleanWritable(polygon2.intersects(polygon1));
 
-        } else {
-            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
         }
     }
 

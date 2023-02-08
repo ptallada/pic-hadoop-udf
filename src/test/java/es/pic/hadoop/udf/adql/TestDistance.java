@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -31,29 +30,10 @@ public class TestDistance {
     Object circle2;
 
     public TestDistance() {
-        List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20)
-        });
-        point1 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point1, coords, ADQLGeometry.Kind.POINT.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(30), new DoubleWritable(40)
-        });
-        point2 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point2, coords, ADQLGeometry.Kind.POINT.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(50), new DoubleWritable(60), new DoubleWritable(70)
-        });
-        circle1 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle1, coords, ADQLGeometry.Kind.CIRCLE.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(80), new DoubleWritable(90), new DoubleWritable(100)
-        });
-        circle2 = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle2, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        point1 = new ADQLPoint(10, 20).serialize();
+        point2 = new ADQLPoint(30, 40).serialize();
+        circle1 = new ADQLCircle(50, 60, 70).serialize();
+        circle2 = new ADQLCircle(80, 90, 100).serialize();
     }
 
     @Test

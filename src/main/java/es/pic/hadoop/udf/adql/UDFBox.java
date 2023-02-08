@@ -1,7 +1,10 @@
 package es.pic.hadoop.udf.adql;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.geometry.S2LatLng;
+import com.google.common.geometry.S2LatLngRect;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
@@ -14,7 +17,6 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -30,7 +32,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 // @formatter:on
 public class UDFBox extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Converter raConverter;
     Converter decConverter;
@@ -41,21 +42,25 @@ public class UDFBox extends GenericUDF {
     DoubleWritable decArg;
     DoubleWritable widthArg;
     DoubleWritable heightArg;
-    Object geom;
-    ADQLGeometry.Kind kind;
 
     double ra;
     double dec;
     double width;
     double height;
 
-    Object polygon;
-    List<DoubleWritable> value;
+    Object geom;
+    ADQLGeometry.Kind kind;
+
+    S2LatLng center;
+    S2LatLng size;
+    S2LatLngRect box;
+
+    List<DoubleWritable> coords;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 3) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
 
@@ -73,7 +78,7 @@ public class UDFBox extends GenericUDF {
                     "This function takes 3 or 4 arguments: either (point, width, height) or (ra, dec, width, height)");
         }
 
-        return geomOI;
+        return ADQLGeometry.OI;
     }
 
     @Override
@@ -85,7 +90,7 @@ public class UDFBox extends GenericUDF {
                 return null;
             }
 
-            kind = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom));
+            kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
 
             if (kind != ADQLGeometry.Kind.POINT) {
                 throw new UDFArgumentTypeException(0,
@@ -93,7 +98,7 @@ public class UDFBox extends GenericUDF {
             }
 
             @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords = (List<DoubleWritable>) geomOI.getField(geom);
+            List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
 
             raArg = coords.get(0);
             decArg = coords.get(1);
@@ -117,18 +122,19 @@ public class UDFBox extends GenericUDF {
         width = widthArg.get();
         height = heightArg.get();
 
-        // Build CCW vertex list, interior is on the left.
-        value = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(ra - width / 2), new DoubleWritable(dec - height / 2),
-                new DoubleWritable(ra + width / 2), new DoubleWritable(dec - height / 2),
-                new DoubleWritable(ra + width / 2), new DoubleWritable(dec + height / 2),
-                new DoubleWritable(ra - width / 2), new DoubleWritable(dec + height / 2),
-        });
+        center = S2LatLng.fromDegrees(dec, ra);
+        size = S2LatLng.fromDegrees(height, width);
+        box = S2LatLngRect.fromCenterSize(center, size);
 
-        polygon = geomOI.create();
-        geomOI.setFieldAndTag(polygon, value, ADQLGeometry.Kind.POLYGON.tag);
+        coords = new ArrayList<DoubleWritable>();
+        for (int i = 0; i < 4; i++) {
+            center = box.getVertex(i);
 
-        return polygon;
+            coords.add(new DoubleWritable(center.lngDegrees()));
+            coords.add(new DoubleWritable(center.latDegrees()));
+        }
+
+        return new ADQLPolygon(coords).serialize();
     }
 
     @Override

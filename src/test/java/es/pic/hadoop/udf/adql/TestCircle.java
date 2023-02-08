@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
@@ -23,23 +22,12 @@ public class TestCircle {
 
     UDFCircle udf = new UDFCircle();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     Object point;
     Object circle;
 
     public TestCircle() {
-        List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20)
-        });
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords, ADQLGeometry.Kind.POINT.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30)
-        });
-        circle = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        point = new ADQLPoint(10, 20).serialize();
+        circle = new ADQLCircle(10, 20, 30).serialize();
     }
 
     @Test
@@ -78,7 +66,7 @@ public class TestCircle {
                 ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         // Both arguments are null
         assertNull(udf.evaluate(new DeferredJavaObject[] {
@@ -104,7 +92,7 @@ public class TestCircle {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(null), new DeferredJavaObject(null)
@@ -141,7 +129,7 @@ public class TestCircle {
                 ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new DoubleWritable(30)),
@@ -154,7 +142,7 @@ public class TestCircle {
                 ADQLGeometry.OI, PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("1:[10.0, 20.0, 30.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(30)),
@@ -169,7 +157,7 @@ public class TestCircle {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("1:[10.0, 20.0, 30.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),

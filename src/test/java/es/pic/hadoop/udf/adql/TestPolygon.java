@@ -24,42 +24,23 @@ public class TestPolygon {
 
     UDFPolygon udf = new UDFPolygon();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     List<DoubleWritable> coords;
     List<Object> points = new ArrayList<Object>();
+    
     Object circle;
 
     public TestPolygon() {
-        Object point;
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(11), new DoubleWritable(22), new DoubleWritable(33)
-        });
-
-        circle = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle, coords, ADQLGeometry.Kind.CIRCLE.tag);
+        circle = new ADQLCircle(11, 22, 33).serialize();
 
         coords = Arrays.asList(new DoubleWritable[] {
                 new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30), new DoubleWritable(40),
                 new DoubleWritable(50), new DoubleWritable(60), new DoubleWritable(70), new DoubleWritable(80),
         });
 
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(0, 2), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
-
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(2, 4), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
-
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(4, 6), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
-
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords.subList(6, 8), ADQLGeometry.Kind.POINT.tag);
-        points.add(point);
+        points.add(new ADQLPoint(coords.subList(0, 2)).serialize());
+        points.add(new ADQLPoint(coords.subList(2, 4)).serialize());
+        points.add(new ADQLPoint(coords.subList(4, 6)).serialize());
+        points.add(new ADQLPoint(coords.subList(6, 8)).serialize());
     }
 
     @Test
@@ -107,7 +88,7 @@ public class TestPolygon {
                 ADQLGeometry.OI, ADQLGeometry.OI, ADQLGeometry.OI
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(points.get(1)),
@@ -134,7 +115,7 @@ public class TestPolygon {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
@@ -174,7 +155,7 @@ public class TestPolygon {
                 ADQLGeometry.OI, ADQLGeometry.OI, ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(points.get(1)),
@@ -196,7 +177,7 @@ public class TestPolygon {
                 ADQLGeometry.OI, ADQLGeometry.OI, ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("2:[10.0, 20.0, 30.0, 40.0, 50.0, 60.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(points.get(0)), new DeferredJavaObject(points.get(1)),
@@ -215,7 +196,7 @@ public class TestPolygon {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("2:[10.0, 20.0, 30.0, 40.0, 50.0, 60.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(coords.get(0)), new DeferredJavaObject(coords.get(1)),

@@ -18,9 +18,10 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
+
+import healpix.essentials.Moc;
 
 // @formatter:off
 @Description(
@@ -35,7 +36,6 @@ import org.apache.hadoop.io.BooleanWritable;
 // @formatter:on
 public class UDFContains extends GenericUDF {
     final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Object geom1;
     Object geom2;
@@ -44,25 +44,31 @@ public class UDFContains extends GenericUDF {
 
     double ra;
     double dec;
-    double radius;
+    double theta;
+    double phi;
+    long ipix;
 
     S2Point point1;
     S2Point point2;
     S2Cap circle1;
     S2Cap circle2;
+    S1Angle radius;
     S2Loop polygon1;
     S2Loop polygon2;
+    Moc moc1;
+    ADQLRegion region1;
+    ADQLRegion region2;
 
     List<S2Point> vertices;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
-            if (arguments[1] != geomOI) {
-                throw new UDFArgumentTypeException(0, "Second argument has to be of ADQL geometry type.");
+            if (arguments[1] != ADQLGeometry.OI) {
+                throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else {
             throw new UDFArgumentLengthException("This function takes 2 arguments: geom1, geom2");
@@ -80,17 +86,25 @@ public class UDFContains extends GenericUDF {
             return null;
         }
 
-        kind1 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom1));
-        kind2 = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(geom2));
+        kind1 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom1));
+        kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
 
+        if (kind2 == ADQLGeometry.Kind.POINT) {
+            throw new UDFArgumentTypeException(1, "Second geometry cannot be a POINT.");
+        } 
+        
         if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
-            throw new UnsupportedOperationException("Operations on regions are not yet supported");
+            // REGION combined with POINT, CIRCLE, POLYGON or another REGION
+            region1 = ADQLGeometry.fromBlob(geom1).toRegion();
+            region2 = ADQLGeometry.fromBlob(geom2).toRegion();
+
+            return new BooleanWritable(region2.contains(region1));
         }
 
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords1 = (List<DoubleWritable>) geomOI.getField(geom1);
+        List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords2 = (List<DoubleWritable>) geomOI.getField(geom2);
+        List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
 
         if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.CIRCLE) {
             // POINT inside CIRCLE
@@ -128,7 +142,7 @@ public class UDFContains extends GenericUDF {
         } else if (kind1 == ADQLGeometry.Kind.CIRCLE && kind2 == ADQLGeometry.Kind.POLYGON) {
             // CIRCLE inside POLYGON
             point1 = S2LatLng.fromDegrees(coords1.get(1).get(), coords1.get(0).get()).toPoint();
-            radius = coords1.get(2).get();
+            radius = S1Angle.degrees(coords1.get(2).get());
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < coords2.size(); i += 2) {
@@ -139,13 +153,16 @@ public class UDFContains extends GenericUDF {
 
             polygon2 = new S2Loop(vertices);
 
-            return new BooleanWritable(polygon2.contains(point1) && (polygon2.getDistance(point1).degrees() > radius));
+            return new BooleanWritable(polygon2.contains(point1) && polygon2.getDistance(point1).greaterThan(radius));
 
         } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.CIRCLE) {
             // POLYGON inside CIRCLE
             point2 = S2LatLng.fromDegrees(coords2.get(1).get(), coords2.get(0).get()).toPoint();
-            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(coords2.get(2).get()));
+            radius = S1Angle.degrees(coords2.get(2).get());
+            circle2 = S2Cap.fromAxisAngle(point2, radius);
 
+            // Circle must contain every vertex
+            vertices = new ArrayList<S2Point>();
             for (int i = 0; i < coords1.size(); i += 2) {
                 ra = coords1.get(i).get();
                 dec = coords1.get(i + 1).get();
@@ -153,12 +170,24 @@ public class UDFContains extends GenericUDF {
                 point1 = S2LatLng.fromDegrees(dec, ra).toPoint();
                 if (!circle2.contains(point1)) {
                     return new BooleanWritable(false);
+                } else {
+                    vertices.add(point1);
                 }
+
+            }
+            polygon2 = new S2Loop(vertices);
+
+            // And polygon cannot overlap with circle's complement.
+            circle2 = circle2.complement();
+            point2 = circle2.axis();
+            radius = circle2.angle();
+            if (polygon2.contains(point2) || polygon2.getDistance(point2).lessOrEquals(radius)) {
+                return new BooleanWritable(false);
+            } else {
+                return new BooleanWritable(true);
             }
 
-            return new BooleanWritable(true);
-
-        } else if (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON) {
+        } else { // (kind1 == ADQLGeometry.Kind.POLYGON && kind2 == ADQLGeometry.Kind.POLYGON)
             // POLYGON inside POLYGON
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < coords1.size(); i += 2) {
@@ -177,9 +206,6 @@ public class UDFContains extends GenericUDF {
             polygon2 = new S2Loop(vertices);
 
             return new BooleanWritable(polygon2.containsNested(polygon1));
-
-        } else {
-            throw new UDFArgumentTypeException(0, "Second geometry cannot be a POINT.");
         }
     }
 

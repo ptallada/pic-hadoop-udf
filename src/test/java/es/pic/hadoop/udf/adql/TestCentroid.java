@@ -6,56 +6,36 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.LongWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+
+import healpix.essentials.Moc;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCentroid {
 
     UDFCentroid udf = new UDFCentroid();
 
-    ObjectInspector outputOI = ADQLGeometry.OI;
-
     Object point;
     Object circle;
     Object polygon;
     Object region;
 
-    public TestCentroid() {
-        List<DoubleWritable> coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20)
-        });
-        point = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(point, coords, ADQLGeometry.Kind.POINT.tag);
+    public TestCentroid() throws HiveException {
+        point = new ADQLPoint(10, 20).serialize();
+        circle = new ADQLCircle(10, 20, 30).serialize();
+        polygon = new ADQLPolygon(10, 10, 20, 10, 20, 20, 10, 20).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30)
-        });
-        circle = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(circle, coords, ADQLGeometry.Kind.CIRCLE.tag);
-
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(10),
-                new DoubleWritable(20), new DoubleWritable(20), new DoubleWritable(10), new DoubleWritable(20),
-        });
-        polygon = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(polygon, coords, ADQLGeometry.Kind.POLYGON.tag);
-
-        List<LongWritable> ranges = Arrays.asList(new LongWritable[] {
-                new LongWritable(0), new LongWritable(1)
-        });
-        region = ADQLGeometry.OI.create();
-        ADQLGeometry.OI.setFieldAndTag(region, ranges, ADQLGeometry.Kind.REGION.tag);
+        Moc moc = new Moc();
+        moc.addPixelRange(3, 23, 34);
+        region = new ADQLRegion(moc).serialize();
     }
 
     @Test
@@ -90,7 +70,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null)
@@ -103,7 +83,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point),
@@ -116,7 +96,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("0:[10.0, 20.0]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle),
@@ -129,7 +109,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("0:[14.999999999999977, 15.014819855438457]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon),
@@ -142,7 +122,7 @@ public class TestCentroid {
                 ADQLGeometry.OI,
         };
 
-        assertEquals(udf.initialize(params), outputOI);
+        assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(UnsupportedOperationException.class, () -> udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region),

@@ -11,7 +11,6 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
-import org.apache.hadoop.hive.serde2.objectinspector.StandardUnionObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -27,7 +26,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 // @formatter:on
 public class UDFCoord2 extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
-    final static StandardUnionObjectInspector geomOI = ADQLGeometry.OI;
 
     Object pt;
     ADQLGeometry.Kind kind;
@@ -36,7 +34,7 @@ public class UDFCoord2 extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 1) {
-            if (arguments[0] != geomOI) {
+            if (arguments[0] != ADQLGeometry.OI) {
                 throw new UDFArgumentTypeException(0, "Argument has to be of ADQL geometry type.");
             }
         } else {
@@ -54,7 +52,7 @@ public class UDFCoord2 extends GenericUDF {
             return null;
         }
 
-        kind = ADQLGeometry.Kind.valueOfTag(geomOI.getTag(pt));
+        kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(pt));
 
         if (kind != ADQLGeometry.Kind.POINT) {
             throw new UDFArgumentTypeException(0,
@@ -62,7 +60,7 @@ public class UDFCoord2 extends GenericUDF {
         }
 
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) geomOI.getField(pt);
+        List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(pt);
 
         return coords.get(1);
     }
