@@ -52,15 +52,14 @@ public class UDFCoord1 extends GenericUDF {
             return null;
         }
 
-        kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(pt));
+        kind = ADQLGeometry.getTag(pt);
 
         if (kind != ADQLGeometry.Kind.POINT) {
             throw new UDFArgumentTypeException(0,
                     String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
         }
 
-        @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(pt);
+        List<DoubleWritable> coords = ADQLGeometry.getCoords(pt);
 
         return coords.get(0);
     }

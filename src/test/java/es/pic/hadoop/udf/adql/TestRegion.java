@@ -108,16 +108,16 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(827959434, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(827992107, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point)
         }).hashCode());
-        assertEquals(-835085321, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(-835052650, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle)
         }).hashCode());
-        assertEquals(780344799, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(780377470, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon)
         }).hashCode());
-        assertEquals(35731649, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region)
         }).hashCode());
     }
@@ -130,16 +130,16 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(36646715, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(36679386, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(28, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(32705, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(1193292115, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1193324786, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(35731649, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
     }

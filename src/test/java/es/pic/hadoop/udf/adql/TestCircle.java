@@ -144,7 +144,7 @@ public class TestCircle {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("1:[10.0, 20.0, 30.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[1, [10.0, 20.0, 30.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(30)),
         }).toString());
     }
@@ -159,7 +159,7 @@ public class TestCircle {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("1:[10.0, 20.0, 30.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[1, [10.0, 20.0, 30.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),
                 new DeferredJavaObject(new DoubleWritable(30)),
         }).toString());

@@ -9,7 +9,7 @@ import com.google.common.geometry.S2Point;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
@@ -32,12 +32,12 @@ public class ADQLPolygon extends ADQLGeometry {
     }
 
     protected static ADQLPolygon fromBlob(Object blob) {
-        return fromBlob(blob, OI);
+        return fromBlob(blob, ADQLGeometry.OI);
     }
 
-    protected static ADQLPolygon fromBlob(Object blob, UnionObjectInspector OI) {
+    protected static ADQLPolygon fromBlob(Object blob, StructObjectInspector OI) {
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
+        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
 
         return new ADQLPolygon(coords);
     }
@@ -99,7 +99,9 @@ public class ADQLPolygon extends ADQLGeometry {
 
     public Object serialize() {
         Object blob = OI.create();
-        OI.setFieldAndTag(blob, coords, Kind.POLYGON.tag);
+        
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, Kind.POLYGON.tag);
+        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;
     }

@@ -102,15 +102,14 @@ public class UDFPolygon extends GenericUDF {
                     return null;
                 }
 
-                kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
+                kind = ADQLGeometry.getTag(geom);
 
                 if (kind != ADQLGeometry.Kind.POINT) {
                     throw new UDFArgumentTypeException(i,
                             String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
                 }
 
-                @SuppressWarnings("unchecked")
-                List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+                List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
 
                 coordArgs.add(coords.get(0));
                 coordArgs.add(coords.get(1));

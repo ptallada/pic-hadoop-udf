@@ -53,21 +53,19 @@ public class UDFCentroid extends GenericUDF {
             return null;
         }
 
-        kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
+        kind = ADQLGeometry.getTag(geom);
 
         switch (kind) {
         case POINT:
             return null;
 
         case CIRCLE:
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> circle_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+            List<DoubleWritable> circle_coords = ADQLGeometry.getCoords(geom);
 
             return new ADQLPoint(circle_coords.subList(0, 2)).serialize();
 
         case POLYGON:
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> poly_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+            List<DoubleWritable> poly_coords = ADQLGeometry.getCoords(geom);
             List<S2Point> vertices = new ArrayList<S2Point>();
 
             double ra;

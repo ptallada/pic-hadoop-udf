@@ -94,7 +94,7 @@ public class TestPoint {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("0:[45.0, 7.114779521089076E-8]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[0, [45.0, 7.114779521089076E-8], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new LongWritable(0)),
         }).toString());
     }
@@ -108,7 +108,7 @@ public class TestPoint {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("0:[0.0, 0.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[0, [0.0, 0.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
         }).toString());
     }

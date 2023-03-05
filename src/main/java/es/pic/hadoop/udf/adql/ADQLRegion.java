@@ -1,7 +1,7 @@
 package es.pic.hadoop.udf.adql;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.io.BytesWritable;
 
 import healpix.essentials.Moc;
@@ -17,11 +17,11 @@ public class ADQLRegion extends ADQLGeometry {
     }
 
     protected static ADQLRegion fromBlob(Object blob) throws HiveException {
-        return fromBlob(blob, OI);
+        return fromBlob(blob, ADQLGeometry.OI);
     }
 
-    protected static ADQLRegion fromBlob(Object blob, UnionObjectInspector OI) throws HiveException {
-        byte[] bytes = ((BytesWritable) OI.getField(blob)).getBytes();
+    protected static ADQLRegion fromBlob(Object blob, StructObjectInspector OI) throws HiveException {
+        byte[] bytes = ADQLGeometry.getBytes(blob).getBytes();
         Moc moc;
 
         try {
@@ -71,7 +71,8 @@ public class ADQLRegion extends ADQLGeometry {
             throw new HiveException(e);
         }
 
-        OI.setFieldAndTag(blob, new BytesWritable(bytes), Kind.REGION.tag);
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, Kind.REGION.tag);
+        OI.setStructFieldData(blob, ADQLGeometry.mocField, new BytesWritable(bytes));
 
         return blob;
     }

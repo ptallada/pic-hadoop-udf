@@ -78,8 +78,8 @@ public class UDFDistance extends GenericUDF {
                 return null;
             }
 
-            kind1 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom1));
-            kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
+            kind1 = ADQLGeometry.getTag(geom1);
+            kind2 = ADQLGeometry.getTag(geom2);
 
             if (kind1 != ADQLGeometry.Kind.POINT) {
                 throw new UDFArgumentTypeException(0,
@@ -90,10 +90,8 @@ public class UDFDistance extends GenericUDF {
                         String.format("Second geometry is not a POINT, but a %s.", kind2.name()));
             }
 
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
+            List<DoubleWritable> coords1 = ADQLGeometry.getCoords(geom1);
+            List<DoubleWritable> coords2 = ADQLGeometry.getCoords(geom2);
 
             ra1Arg = coords1.get(0);
             dec1Arg = coords1.get(1);

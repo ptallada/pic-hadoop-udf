@@ -179,7 +179,7 @@ public class TestPolygon {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[10.0, 20.0, 30.0, 40.0, 50.0, 60.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[2, [10.0, 20.0, 30.0, 40.0, 50.0, 60.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(points.get(0)), new DeferredJavaObject(points.get(1)),
                 new DeferredJavaObject(points.get(2)),
         }).toString());
@@ -198,7 +198,7 @@ public class TestPolygon {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[10.0, 20.0, 30.0, 40.0, 50.0, 60.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[2, [10.0, 20.0, 30.0, 40.0, 50.0, 60.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(coords.get(0)), new DeferredJavaObject(coords.get(1)),
                 new DeferredJavaObject(coords.get(2)), new DeferredJavaObject(coords.get(3)),
                 new DeferredJavaObject(coords.get(4)), new DeferredJavaObject(coords.get(5)),

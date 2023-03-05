@@ -9,7 +9,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
-import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
 import healpix.essentials.Moc;
@@ -51,7 +51,7 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
             Moc moc = null;
         }
 
-        protected UnionObjectInspector inputOI;
+        protected StructObjectInspector inputOI;
 
         protected boolean isAllColumns;
         protected boolean isDistinct;
@@ -81,7 +81,7 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
                 throw new UDFArgumentTypeException(0, "The argument has to be of ADQL geometry type.");
             }
 
-            inputOI = (UnionObjectInspector) parameters[0];
+            inputOI = (StructObjectInspector) parameters[0];
 
             return ADQLGeometry.OI;
         }

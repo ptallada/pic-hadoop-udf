@@ -139,7 +139,7 @@ public class TestBox {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[2, [8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(4)),
                 new DeferredJavaObject(new DoubleWritable(6)),
         }).toString());
@@ -156,7 +156,7 @@ public class TestBox {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[2, [8.0, 17.0, 12.0, 17.0, 12.0, 23.0, 8.0, 23.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),
                 new DeferredJavaObject(new DoubleWritable(4)), new DeferredJavaObject(new DoubleWritable(6)),
         }).toString());

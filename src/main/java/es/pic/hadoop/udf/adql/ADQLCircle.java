@@ -9,6 +9,7 @@ import com.google.common.geometry.S2LatLng;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
@@ -30,8 +31,12 @@ public class ADQLCircle extends ADQLGeometry {
     }
 
     protected static ADQLCircle fromBlob(Object blob) {
+        return fromBlob(blob, ADQLGeometry.OI);
+    }
+
+    protected static ADQLCircle fromBlob(Object blob, StructObjectInspector OI) {
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
+        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
 
         return new ADQLCircle(coords);
     }
@@ -82,7 +87,9 @@ public class ADQLCircle extends ADQLGeometry {
 
     public Object serialize() {
         Object blob = OI.create();
-        OI.setFieldAndTag(blob, coords, Kind.CIRCLE.tag);
+
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, Kind.CIRCLE.tag);
+        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;
     }

@@ -98,7 +98,7 @@ public class TestCentroid {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("0:[10.0, 20.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[0, [10.0, 20.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle),
         }).toString());
     }
@@ -111,7 +111,7 @@ public class TestCentroid {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("0:[14.999999999999977, 15.014819855438457]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[0, [14.999999999999977, 15.014819855438457], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon),
         }).toString());
     }
