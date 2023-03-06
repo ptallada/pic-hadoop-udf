@@ -14,7 +14,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
-import org.apache.hadoop.io.ByteWritable;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -75,10 +75,12 @@ public class TestPix2Vec {
         assertEquals(udf.initialize(params), outputOI);
 
         assertThrows(HiveException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new ByteWritable((byte) 50)), new DeferredJavaObject(new LongWritable(50)), new DeferredJavaObject(new BooleanWritable(true))
+                new DeferredJavaObject(new ByteWritable((byte) 50)), new DeferredJavaObject(new LongWritable(50)),
+                new DeferredJavaObject(new BooleanWritable(true))
         }));
         assertThrows(HiveException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new ByteWritable((byte) 10)), new DeferredJavaObject(new LongWritable(-50)), new DeferredJavaObject(new BooleanWritable(true))
+                new DeferredJavaObject(new ByteWritable((byte) 10)), new DeferredJavaObject(new LongWritable(-50)),
+                new DeferredJavaObject(new BooleanWritable(true))
         }));
     }
 
