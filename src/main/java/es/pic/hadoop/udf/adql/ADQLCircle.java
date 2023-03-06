@@ -19,6 +19,8 @@ import healpix.essentials.RangeSet;
 
 public class ADQLCircle extends ADQLGeometry {
 
+    private final static int INCLUSIVE_FACTOR = 4;
+
     protected List<DoubleWritable> coords;
 
     public ADQLCircle(double ra, double dec, double radius) {
@@ -76,7 +78,7 @@ public class ADQLCircle extends ADQLGeometry {
 
         RangeSet rs;
         try {
-            rs = HealpixProc.queryDiscNest(order, pt, radius);
+            rs = HealpixProc.queryDiscInclusiveNest(order, pt, radius, INCLUSIVE_FACTOR);
         } catch (Exception e) {
             throw new HiveException(e);
         }

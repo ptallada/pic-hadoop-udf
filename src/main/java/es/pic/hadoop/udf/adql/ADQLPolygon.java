@@ -19,6 +19,8 @@ import healpix.essentials.RangeSet;
 
 public class ADQLPolygon extends ADQLGeometry {
 
+    private final static int INCLUSIVE_FACTOR = 4;
+
     protected List<DoubleWritable> coords;
 
     public ADQLPolygon(double... args) {
@@ -88,7 +90,7 @@ public class ADQLPolygon extends ADQLGeometry {
 
         // FIXME: HEALPix only works with convex polygons, need to implement ear-clipping
         try {
-            rs = HealpixProc.queryPolygonNest(order, pts);
+            rs = HealpixProc.queryPolygonInclusiveNest(order, pts, INCLUSIVE_FACTOR);
         } catch (Exception e) {
             throw new HiveException(e);
         }

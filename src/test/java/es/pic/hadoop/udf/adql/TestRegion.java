@@ -111,10 +111,10 @@ public class TestRegion {
         assertEquals(357800518, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point)
         }).hashCode());
-        assertEquals(819588683, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1507459696, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle)
         }).hashCode());
-        assertEquals(780377470, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1137480229, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon)
         }).hashCode());
         assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
@@ -133,10 +133,10 @@ public class TestRegion {
         assertEquals(1193325843, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(32705, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(-1996283600, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(1193324786, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(-1108620869, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
         assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
