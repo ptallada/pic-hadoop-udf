@@ -13,6 +13,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StandardStructObjectInspect
 import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.io.BytesWritable;
 
 public abstract class ADQLGeometry {
@@ -67,15 +68,27 @@ public abstract class ADQLGeometry {
     }
 
     public static Kind getTag(Object blob) {
-        return Kind.valueOfTag((byte) OI.getStructFieldData(blob, tagField));
+        return getTag(blob, OI);
+    }
+
+    public static Kind getTag(Object blob, StructObjectInspector OI) {
+        return Kind.valueOfTag(((ByteWritable) OI.getStructFieldData(blob, tagField)).get());
+    }
+
+    public static List<DoubleWritable> getCoords(Object blob) {
+        return getCoords(blob, OI);
     }
 
     @SuppressWarnings("unchecked")
-    public static List<DoubleWritable> getCoords(Object blob) {
+    public static List<DoubleWritable> getCoords(Object blob, StructObjectInspector OI) {
         return (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
     }
 
     public static BytesWritable getBytes(Object blob) {
+        return getBytes(blob, OI);
+    }
+
+    public static BytesWritable getBytes(Object blob, StructObjectInspector OI) {
         return (BytesWritable) OI.getStructFieldData(blob, ADQLGeometry.mocField);
     }
 
@@ -84,7 +97,7 @@ public abstract class ADQLGeometry {
     }
 
     protected static ADQLGeometry fromBlob(Object blob, StructObjectInspector OI) throws HiveException {
-        Kind kind = getTag(blob);
+        Kind kind = getTag(blob, OI);
 
         switch (kind) {
         case POINT:

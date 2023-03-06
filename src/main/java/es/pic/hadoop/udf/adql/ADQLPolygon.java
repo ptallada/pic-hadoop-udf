@@ -10,6 +10,7 @@ import com.google.common.geometry.S2Point;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
@@ -99,8 +100,8 @@ public class ADQLPolygon extends ADQLGeometry {
 
     public Object serialize() {
         Object blob = OI.create();
-        
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, Kind.POLYGON.tag);
+
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.POLYGON.tag));
         OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;

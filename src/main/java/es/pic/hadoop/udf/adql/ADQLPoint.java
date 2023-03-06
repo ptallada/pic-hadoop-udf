@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 import healpix.essentials.HealpixBase;
 import healpix.essentials.HealpixProc;
@@ -81,7 +82,7 @@ public class ADQLPoint extends ADQLGeometry {
     public Object serialize() {
         Object blob = OI.create();
 
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, Kind.POINT.tag);
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.POINT.tag));
         OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;

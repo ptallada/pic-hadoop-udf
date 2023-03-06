@@ -2,6 +2,7 @@ package es.pic.hadoop.udf.adql;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.io.BytesWritable;
 
 import healpix.essentials.Moc;
@@ -71,7 +72,7 @@ public class ADQLRegion extends ADQLGeometry {
             throw new HiveException(e);
         }
 
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, Kind.REGION.tag);
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.REGION.tag));
         OI.setStructFieldData(blob, ADQLGeometry.mocField, new BytesWritable(bytes));
 
         return blob;
