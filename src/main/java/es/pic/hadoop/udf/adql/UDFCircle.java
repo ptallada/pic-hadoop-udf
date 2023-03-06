@@ -13,6 +13,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
@@ -46,7 +47,7 @@ public class UDFCircle extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (arguments[0] != ADQLGeometry.OI) {
+            if (!ObjectInspectorUtils.compareTypes(ADQLGeometry.OI, arguments[0])) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
 

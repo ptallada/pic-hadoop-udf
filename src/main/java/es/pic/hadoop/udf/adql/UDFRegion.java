@@ -9,6 +9,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.hive.serde2.io.ByteWritable;
@@ -41,7 +42,7 @@ public class UDFRegion extends GenericUDF {
             throw new UDFArgumentLengthException("This function takes 2 arguments at most: geometry, [order]");
         }
 
-        if (arguments[0] != ADQLGeometry.OI) {
+        if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
             throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
         }
 

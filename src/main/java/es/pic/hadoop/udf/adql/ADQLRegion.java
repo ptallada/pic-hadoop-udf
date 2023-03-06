@@ -21,7 +21,7 @@ public class ADQLRegion extends ADQLGeometry {
     }
 
     protected static ADQLRegion fromBlob(Object blob, StructObjectInspector OI) throws HiveException {
-        byte[] bytes = ADQLGeometry.getBytes(blob).getBytes();
+        byte[] bytes = ADQLGeometry.getBytes(blob, OI).getBytes();
         Moc moc;
 
         try {

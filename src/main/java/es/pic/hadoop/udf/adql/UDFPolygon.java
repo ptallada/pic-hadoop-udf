@@ -14,6 +14,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -51,7 +52,7 @@ public class UDFPolygon extends GenericUDF {
             for (int i = 0; i < arguments.length; i++) {
                 oi = arguments[i];
 
-                if (oi == ADQLGeometry.OI) {
+                if (ObjectInspectorUtils.compareTypes(oi, ADQLGeometry.OI)) {
                     has_points = true;
                 } else {
                     has_coords = true;

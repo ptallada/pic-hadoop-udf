@@ -8,6 +8,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 
 // @formatter:off
 @Description(
@@ -28,7 +29,7 @@ public class UDFComplement extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 1) {
-            if (arguments[0] != ADQLGeometry.OI) {
+            if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "The argument has to be of ADQL geometry type.");
             }
         } else {
