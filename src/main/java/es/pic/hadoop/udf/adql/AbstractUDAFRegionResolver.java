@@ -128,15 +128,25 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
         }
 
         @Override
-        public Object terminatePartial(AggregationBuffer agg) throws HiveException {
-            return terminate(agg);
+        public Object terminatePartial(AggregationBuffer buff) throws HiveException {
+            RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
+
+            if (agg.moc == null) {
+                return null;
+            } else {
+                return terminate(buff);
+            }
         }
 
         @Override
         public Object terminate(AggregationBuffer buff) throws HiveException {
             RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
 
-            return new ADQLRegion(agg.moc).serialize();
+            if (agg.moc == null) {
+                return new ADQLRegion(new Moc()).serialize();
+            } else {
+                return new ADQLRegion(agg.moc).serialize();
+            }
         }
     }
 }

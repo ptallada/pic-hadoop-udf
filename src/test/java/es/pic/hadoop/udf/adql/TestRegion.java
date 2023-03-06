@@ -108,10 +108,10 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(827992107, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(357800518, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point)
         }).hashCode());
-        assertEquals(-835052650, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(819588683, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle)
         }).hashCode());
         assertEquals(780377470, udf.evaluate(new DeferredJavaObject[] {
@@ -130,7 +130,7 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(36679386, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1193325843, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
         assertEquals(32705, udf.evaluate(new DeferredJavaObject[] {
