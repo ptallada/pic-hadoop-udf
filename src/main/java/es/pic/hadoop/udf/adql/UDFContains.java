@@ -45,9 +45,6 @@ public class UDFContains extends GenericUDF {
 
     double ra;
     double dec;
-    double theta;
-    double phi;
-    long ipix;
 
     S2Point point1;
     S2Point point2;

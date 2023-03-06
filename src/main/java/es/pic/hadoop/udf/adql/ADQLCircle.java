@@ -68,7 +68,7 @@ public class ADQLCircle extends ADQLGeometry {
     }
 
     public ADQLRegion toRegion(byte order) throws HiveException {
-        double theta = Math.toRadians(this.getDec());
+        double theta = Math.toRadians(90 - this.getDec());
         double phi = Math.toRadians(this.getRa());
         double radius = Math.toRadians(this.getRadius());
 
