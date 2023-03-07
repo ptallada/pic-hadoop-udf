@@ -16,6 +16,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 
 // @formatter:off
 @Description(
@@ -35,7 +36,7 @@ public class UDFCentroid extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 1) {
-            if (arguments[0] != ADQLGeometry.OI) {
+            if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "Argument has to be of ADQL geometry type.");
             }
         } else {
@@ -53,21 +54,19 @@ public class UDFCentroid extends GenericUDF {
             return null;
         }
 
-        kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
+        kind = ADQLGeometry.getTag(geom);
 
         switch (kind) {
         case POINT:
             return null;
 
         case CIRCLE:
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> circle_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+            List<DoubleWritable> circle_coords = ADQLGeometry.getCoords(geom);
 
             return new ADQLPoint(circle_coords.subList(0, 2)).serialize();
 
         case POLYGON:
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> poly_coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+            List<DoubleWritable> poly_coords = ADQLGeometry.getCoords(geom);
             List<S2Point> vertices = new ArrayList<S2Point>();
 
             double ra;

@@ -13,7 +13,7 @@ import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.io.ByteWritable;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -108,16 +108,16 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(827959434, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(357800518, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point)
         }).hashCode());
-        assertEquals(-835085321, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1507459696, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle)
         }).hashCode());
-        assertEquals(780344799, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1137480229, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon)
         }).hashCode());
-        assertEquals(35731649, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region)
         }).hashCode());
     }
@@ -130,16 +130,16 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(36646715, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(1193325843, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(28, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(-1996283600, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(1193292115, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(-1108620869, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
-        assertEquals(35731649, udf.evaluate(new DeferredJavaObject[] {
+        assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region), new DeferredJavaObject(new ByteWritable((byte) 3))
         }).hashCode());
     }

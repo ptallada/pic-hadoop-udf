@@ -98,7 +98,7 @@ public class TestComplement {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("1:[190.0, -20.0, 150.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[1, [190.0, -20.0, 150.0], null]", udf.evaluate(new DeferredJavaObject[] {
             new DeferredJavaObject(circle),
         }).toString());
     }
@@ -111,7 +111,7 @@ public class TestComplement {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("2:[10.0, 20.0, 20.0, 20.0, 20.0, 10.0, 10.0, 10.0]", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[2, [10.0, 20.0, 20.0, 20.0, 20.0, 10.0, 10.0, 10.0], null]", udf.evaluate(new DeferredJavaObject[] {
             new DeferredJavaObject(polygon),
         }).toString());
     }
@@ -124,7 +124,7 @@ public class TestComplement {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("3:0a 34 01 00 0c 00 2c 0a", udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[3, null, 0a 34 01 00 0c 00 2c 0a]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region),
         }).toString());
     }

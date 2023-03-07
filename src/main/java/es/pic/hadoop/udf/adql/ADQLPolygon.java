@@ -9,7 +9,8 @@ import com.google.common.geometry.S2Point;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
@@ -17,6 +18,8 @@ import healpix.essentials.Pointing;
 import healpix.essentials.RangeSet;
 
 public class ADQLPolygon extends ADQLGeometry {
+
+    private final static int INCLUSIVE_FACTOR = 4;
 
     protected List<DoubleWritable> coords;
 
@@ -32,12 +35,12 @@ public class ADQLPolygon extends ADQLGeometry {
     }
 
     protected static ADQLPolygon fromBlob(Object blob) {
-        return fromBlob(blob, OI);
+        return fromBlob(blob, ADQLGeometry.OI);
     }
 
-    protected static ADQLPolygon fromBlob(Object blob, UnionObjectInspector OI) {
+    protected static ADQLPolygon fromBlob(Object blob, StructObjectInspector OI) {
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
+        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
 
         return new ADQLPolygon(coords);
     }
@@ -87,7 +90,7 @@ public class ADQLPolygon extends ADQLGeometry {
 
         // FIXME: HEALPix only works with convex polygons, need to implement ear-clipping
         try {
-            rs = HealpixProc.queryPolygonNest(order, pts);
+            rs = HealpixProc.queryPolygonInclusiveNest(order, pts, INCLUSIVE_FACTOR);
         } catch (Exception e) {
             throw new HiveException(e);
         }
@@ -99,7 +102,9 @@ public class ADQLPolygon extends ADQLGeometry {
 
     public Object serialize() {
         Object blob = OI.create();
-        OI.setFieldAndTag(blob, coords, Kind.POLYGON.tag);
+
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.POLYGON.tag));
+        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;
     }

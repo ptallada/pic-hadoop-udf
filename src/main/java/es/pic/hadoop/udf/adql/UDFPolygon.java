@@ -14,6 +14,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -51,7 +52,7 @@ public class UDFPolygon extends GenericUDF {
             for (int i = 0; i < arguments.length; i++) {
                 oi = arguments[i];
 
-                if (oi == ADQLGeometry.OI) {
+                if (ObjectInspectorUtils.compareTypes(oi, ADQLGeometry.OI)) {
                     has_points = true;
                 } else {
                     has_coords = true;
@@ -102,15 +103,14 @@ public class UDFPolygon extends GenericUDF {
                     return null;
                 }
 
-                kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
+                kind = ADQLGeometry.getTag(geom);
 
                 if (kind != ADQLGeometry.Kind.POINT) {
                     throw new UDFArgumentTypeException(i,
                             String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
                 }
 
-                @SuppressWarnings("unchecked")
-                List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+                List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
 
                 coordArgs.add(coords.get(0));
                 coordArgs.add(coords.get(1));

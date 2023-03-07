@@ -18,6 +18,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.apache.hadoop.io.BooleanWritable;
 
@@ -60,10 +61,10 @@ public class UDFIntersects extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (arguments[0] != ADQLGeometry.OI) {
+            if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
-            if (arguments[1] != ADQLGeometry.OI) {
+            if (!ObjectInspectorUtils.compareTypes(arguments[1], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
         } else {
@@ -82,8 +83,8 @@ public class UDFIntersects extends GenericUDF {
             return null;
         }
 
-        kind1 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom1));
-        kind2 = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom2));
+        kind1 = ADQLGeometry.getTag(geom1);
+        kind2 = ADQLGeometry.getTag(geom2);
 
         if (kind1 == ADQLGeometry.Kind.REGION || kind2 == ADQLGeometry.Kind.REGION) {
             region1 = ADQLGeometry.fromBlob(geom1).toRegion();
@@ -92,10 +93,8 @@ public class UDFIntersects extends GenericUDF {
             return new BooleanWritable(region1.intersects(region2));
         }
 
-        @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords1 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom1);
-        @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords2 = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom2);
+        List<DoubleWritable> coords1 = ADQLGeometry.getCoords(geom1);
+        List<DoubleWritable> coords2 = ADQLGeometry.getCoords(geom2);
 
         if (kind1 == ADQLGeometry.Kind.POINT && kind2 == ADQLGeometry.Kind.POINT) {
             // POINT overlaps POINT

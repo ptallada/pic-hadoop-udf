@@ -5,7 +5,8 @@ import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.UnionObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 import healpix.essentials.HealpixBase;
 import healpix.essentials.HealpixProc;
@@ -27,12 +28,12 @@ public class ADQLPoint extends ADQLGeometry {
     }
 
     protected static ADQLPoint fromBlob(Object blob) {
-        return fromBlob(blob, OI);
+        return fromBlob(blob, ADQLGeometry.OI);
     }
 
-    protected static ADQLPoint fromBlob(Object blob, UnionObjectInspector OI) {
+    protected static ADQLPoint fromBlob(Object blob, StructObjectInspector OI) {
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
+        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
 
         return new ADQLPoint(coords);
     }
@@ -60,7 +61,7 @@ public class ADQLPoint extends ADQLGeometry {
     }
 
     public ADQLRegion toRegion(byte order) throws HiveException {
-        double theta = Math.toRadians(this.getDec());
+        double theta = Math.toRadians(90 - this.getDec());
         double phi = Math.toRadians(this.getRa());
 
         Pointing pt = new Pointing(theta, phi);
@@ -80,7 +81,9 @@ public class ADQLPoint extends ADQLGeometry {
 
     public Object serialize() {
         Object blob = OI.create();
-        OI.setFieldAndTag(blob, coords, Kind.POINT.tag);
+
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.POINT.tag));
+        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;
     }

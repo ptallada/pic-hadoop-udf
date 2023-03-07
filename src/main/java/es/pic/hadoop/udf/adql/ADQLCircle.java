@@ -9,6 +9,8 @@ import com.google.common.geometry.S2LatLng;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.serde2.io.DoubleWritable;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 import healpix.essentials.HealpixProc;
 import healpix.essentials.Moc;
@@ -16,6 +18,8 @@ import healpix.essentials.Pointing;
 import healpix.essentials.RangeSet;
 
 public class ADQLCircle extends ADQLGeometry {
+
+    private final static int INCLUSIVE_FACTOR = 4;
 
     protected List<DoubleWritable> coords;
 
@@ -30,8 +34,12 @@ public class ADQLCircle extends ADQLGeometry {
     }
 
     protected static ADQLCircle fromBlob(Object blob) {
+        return fromBlob(blob, ADQLGeometry.OI);
+    }
+
+    protected static ADQLCircle fromBlob(Object blob, StructObjectInspector OI) {
         @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getField(blob);
+        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
 
         return new ADQLCircle(coords);
     }
@@ -62,7 +70,7 @@ public class ADQLCircle extends ADQLGeometry {
     }
 
     public ADQLRegion toRegion(byte order) throws HiveException {
-        double theta = Math.toRadians(this.getDec());
+        double theta = Math.toRadians(90 - this.getDec());
         double phi = Math.toRadians(this.getRa());
         double radius = Math.toRadians(this.getRadius());
 
@@ -70,7 +78,7 @@ public class ADQLCircle extends ADQLGeometry {
 
         RangeSet rs;
         try {
-            rs = HealpixProc.queryDiscNest(order, pt, radius);
+            rs = HealpixProc.queryDiscInclusiveNest(order, pt, radius, INCLUSIVE_FACTOR);
         } catch (Exception e) {
             throw new HiveException(e);
         }
@@ -82,7 +90,9 @@ public class ADQLCircle extends ADQLGeometry {
 
     public Object serialize() {
         Object blob = OI.create();
-        OI.setFieldAndTag(blob, coords, Kind.CIRCLE.tag);
+
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.CIRCLE.tag));
+        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
 
         return blob;
     }

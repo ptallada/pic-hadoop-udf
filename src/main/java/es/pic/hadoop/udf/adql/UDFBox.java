@@ -17,6 +17,7 @@ import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -60,7 +61,7 @@ public class UDFBox extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 3) {
-            if (arguments[0] != ADQLGeometry.OI) {
+            if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
 
@@ -90,15 +91,14 @@ public class UDFBox extends GenericUDF {
                 return null;
             }
 
-            kind = ADQLGeometry.Kind.valueOfTag(ADQLGeometry.OI.getTag(geom));
+            kind = ADQLGeometry.getTag(geom);
 
             if (kind != ADQLGeometry.Kind.POINT) {
                 throw new UDFArgumentTypeException(0,
                         String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
             }
 
-            @SuppressWarnings("unchecked")
-            List<DoubleWritable> coords = (List<DoubleWritable>) ADQLGeometry.OI.getField(geom);
+            List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
 
             raArg = coords.get(0);
             decArg = coords.get(1);
