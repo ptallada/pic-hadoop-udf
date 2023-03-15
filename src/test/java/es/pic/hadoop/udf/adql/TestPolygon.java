@@ -13,7 +13,6 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.jupiter.api.Test;
@@ -24,17 +23,16 @@ public class TestPolygon {
 
     UDFPolygon udf = new UDFPolygon();
 
-    List<DoubleWritable> coords;
+    List<Double> coords;
     List<Object> points = new ArrayList<Object>();
-    
+
     Object circle;
 
     public TestPolygon() {
         circle = new ADQLCircle(11, 22, 33).serialize();
 
-        coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30), new DoubleWritable(40),
-                new DoubleWritable(50), new DoubleWritable(60), new DoubleWritable(70), new DoubleWritable(80),
+        coords = Arrays.asList(new Double[] {
+                10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0
         });
 
         points.add(new ADQLPoint(coords.subList(0, 2)).serialize());
@@ -50,11 +48,11 @@ public class TestPolygon {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -63,14 +61,14 @@ public class TestPolygon {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector, ADQLGeometry.OI, ADQLGeometry.OI,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector, ADQLGeometry.OI, ADQLGeometry.OI,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 3)));
@@ -107,45 +105,45 @@ public class TestPolygon {
     @Test
     void nullCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(null), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(null),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(null),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(null), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(null),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(null),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(null), new DeferredJavaObject(new Double(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
-                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(null),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(null),
         }));
     }
 
@@ -188,12 +186,12 @@ public class TestPolygon {
     @Test
     void validCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);

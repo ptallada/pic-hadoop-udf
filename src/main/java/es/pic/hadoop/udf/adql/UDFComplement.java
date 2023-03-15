@@ -9,6 +9,7 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 
 // @formatter:off
 @Description(
@@ -23,6 +24,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 // @formatter:on
 public class UDFComplement extends GenericUDF {
 
+    StructObjectInspector inputOI;
+
     Object blob;
     ADQLGeometry geom;
 
@@ -32,6 +35,7 @@ public class UDFComplement extends GenericUDF {
             if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "The argument has to be of ADQL geometry type.");
             }
+            inputOI = (StructObjectInspector) arguments[0];
         } else {
             throw new UDFArgumentLengthException("This function takes 1 arguments: region");
         }
@@ -47,7 +51,7 @@ public class UDFComplement extends GenericUDF {
             return null;
         }
 
-        geom = ADQLGeometry.fromBlob(blob);
+        geom = ADQLGeometry.fromBlob(blob, inputOI);
 
         return geom.complement().serialize();
     }

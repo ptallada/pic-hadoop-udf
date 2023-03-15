@@ -16,15 +16,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import healpix.essentials.Moc;
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestContains {
 
     UDFContains udf = new UDFContains();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
+    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
 
+    ADQLRangeSet rs;
     Object point1;
     Object point2;
     Object point3;
@@ -38,7 +37,7 @@ public class TestContains {
     Object region2;
     Object region3;
 
-    public TestContains() throws HiveException {
+    public TestContains() {
         point1 = new ADQLPoint(-4, 0).serialize();
         point2 = new ADQLPoint(0, 0).serialize();
         point3 = new ADQLPoint(6, 0).serialize();
@@ -51,17 +50,17 @@ public class TestContains {
         polygon2 = new ADQLPolygon(-1, -1, 1, -1, 1, 1, -1, 1).serialize();
         polygon3 = new ADQLPolygon(-1, 2, 1, 2, 1, 4, -1, 4).serialize();
 
-        Moc moc = new Moc();
-        moc.addPixelRange(3, 1, 10);
-        region1 = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 1, 10);
+        region1 = new ADQLRegion(rs).serialize();
 
-        moc = new Moc();
-        moc.addPixelRange(3, 45, 50);
-        region2 = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 45, 50);
+        region2 = new ADQLRegion(rs).serialize();
 
-        moc = new Moc();
-        moc.addPixelRange(3, 40, 750);
-        region3 = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 40, 750);
+        region3 = new ADQLRegion(rs).serialize();
     }
 
     @Test
@@ -71,11 +70,11 @@ public class TestContains {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -84,10 +83,10 @@ public class TestContains {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector, ADQLGeometry.OI,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector, ADQLGeometry.OI,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 2)));
@@ -143,30 +142,29 @@ public class TestContains {
 
         assertEquals(udf.initialize(params), outputOI);
 
-
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
-            new DeferredJavaObject(point1), new DeferredJavaObject(region3)
+                new DeferredJavaObject(point1), new DeferredJavaObject(region3)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point2), new DeferredJavaObject(region1)
         }).toString());
 
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
-            new DeferredJavaObject(circle2), new DeferredJavaObject(region3)
+                new DeferredJavaObject(circle2), new DeferredJavaObject(region3)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle3), new DeferredJavaObject(region1)
         }).toString());
 
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
-            new DeferredJavaObject(polygon2), new DeferredJavaObject(region3)
+                new DeferredJavaObject(polygon2), new DeferredJavaObject(region3)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon3), new DeferredJavaObject(region1)
         }).toString());
 
         assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
-            new DeferredJavaObject(region2), new DeferredJavaObject(region3)
+                new DeferredJavaObject(region2), new DeferredJavaObject(region3)
         }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region1), new DeferredJavaObject(region2)
@@ -193,14 +191,14 @@ public class TestContains {
                 new DeferredJavaObject(circle1), new DeferredJavaObject(circle3)
         }).toString());
 
-        // assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+        // assertEquals("true", udf.evaluate(new DeferredJavaObject[] { //
         //         new DeferredJavaObject(circle1), new DeferredJavaObject(polygon1)
         // }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle1), new DeferredJavaObject(polygon3)
         }).toString());
 
-        // assertEquals("true", udf.evaluate(new DeferredJavaObject[] {
+        // assertEquals("true", udf.evaluate(new DeferredJavaObject[] { //
         //         new DeferredJavaObject(polygon3), new DeferredJavaObject(circle2)
         // }).toString());
         assertEquals("false", udf.evaluate(new DeferredJavaObject[] {

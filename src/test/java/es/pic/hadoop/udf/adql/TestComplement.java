@@ -16,8 +16,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import healpix.essentials.Moc;
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestComplement {
 
@@ -28,14 +26,21 @@ public class TestComplement {
     Object polygon;
     Object region;
 
-    public TestComplement() throws HiveException {
+    ADQLRangeSet rs;
+    ADQLRangeSet rs_output;
+
+    public TestComplement() {
         point = new ADQLPoint(10, 20).serialize();
         circle = new ADQLCircle(10, 20, 30).serialize();
         polygon = new ADQLPolygon(10, 10, 20, 10, 20, 20, 10, 20).serialize();
 
-        Moc moc = new Moc();
-        moc.addPixelRange(3, 23, 34);
-        region = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 23, 34);
+        region = new ADQLRegion(rs).serialize();
+
+        rs_output = new ADQLRangeSet();
+        rs_output.addPixelRange(3, 0, 23);
+        rs_output.addPixelRange(3, 34, 768);
     }
 
     @Test
@@ -45,10 +50,10 @@ public class TestComplement {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -56,9 +61,9 @@ public class TestComplement {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(params));
@@ -99,7 +104,7 @@ public class TestComplement {
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("[1, [190.0, -20.0, 150.0], null]", udf.evaluate(new DeferredJavaObject[] {
-            new DeferredJavaObject(circle),
+                new DeferredJavaObject(circle),
         }).toString());
     }
 
@@ -111,9 +116,10 @@ public class TestComplement {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("[2, [10.0, 20.0, 20.0, 20.0, 20.0, 10.0, 10.0, 10.0], null]", udf.evaluate(new DeferredJavaObject[] {
-            new DeferredJavaObject(polygon),
-        }).toString());
+        assertEquals("[2, [10.0, 20.0, 20.0, 20.0, 20.0, 10.0, 10.0, 10.0], null]",
+                udf.evaluate(new DeferredJavaObject[] {
+                        new DeferredJavaObject(polygon),
+                }).toString());
     }
 
     @Test
@@ -124,9 +130,13 @@ public class TestComplement {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals("[3, null, 0a 34 01 00 0c 00 2c 0a]", udf.evaluate(new DeferredJavaObject[] {
+        ADQLGeometry output = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region),
-        }).toString());
+        }), ADQLGeometry.OI);
+
+        assertEquals(3, output.getKind().value);
+        assertNull(output.getNumCoords());
+        assertEquals(rs_output, output.getRangeSet());
     }
 
     @Test

@@ -7,9 +7,9 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -24,10 +24,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFArea extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
 
-    double ra;
-    double dec;
+    StructObjectInspector inputOI;
 
     Object blob;
     ADQLGeometry geom;
@@ -38,6 +37,7 @@ public class UDFArea extends GenericUDF {
             if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "Argument has to be of ADQL geometry type.");
             }
+            inputOI = (StructObjectInspector) arguments[0];
         } else {
             throw new UDFArgumentLengthException("This function takes a single argument: geometry");
         }
@@ -53,9 +53,9 @@ public class UDFArea extends GenericUDF {
             return null;
         }
 
-        geom = ADQLGeometry.fromBlob(blob);
+        geom = ADQLGeometry.fromBlob(blob, inputOI);
 
-        return new DoubleWritable(geom.area());
+        return new Double(geom.area());
     }
 
     @Override

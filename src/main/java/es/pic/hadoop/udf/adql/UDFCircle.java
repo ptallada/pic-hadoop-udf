@@ -1,8 +1,5 @@
 package es.pic.hadoop.udf.adql;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
@@ -10,11 +7,11 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
 // @formatter:off
@@ -29,27 +26,29 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFCircle extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+
+    StructObjectInspector inputOI;
 
     Converter raConverter;
     Converter decConverter;
     Converter radiusConverter;
 
-    DoubleWritable raArg;
-    DoubleWritable decArg;
-    DoubleWritable radiusArg;
+    Double raArg;
+    Double decArg;
+    Double radiusArg;
 
-    Object geom;
-    ADQLGeometry.Kind kind;
-
-    List<DoubleWritable> value;
+    Object blob;
+    ADQLGeometry geom;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 2) {
-            if (!ObjectInspectorUtils.compareTypes(ADQLGeometry.OI, arguments[0])) {
+
+            if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
+            inputOI = (StructObjectInspector) arguments[0];
 
             radiusConverter = ObjectInspectorConverters.getConverter(arguments[1], doubleOI);
 
@@ -69,40 +68,35 @@ public class UDFCircle extends GenericUDF {
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         if (arguments.length == 2) {
-            geom = arguments[0].get();
+            blob = arguments[0].get();
 
-            if (geom == null) {
+            if (blob == null) {
                 return null;
             }
 
-            kind = ADQLGeometry.getTag(geom);
+            geom = ADQLGeometry.fromBlob(blob, inputOI);
 
-            if (kind != ADQLGeometry.Kind.POINT) {
+            if (!(geom instanceof ADQLPoint)) {
                 throw new UDFArgumentTypeException(0,
-                        String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
+                        String.format("Provided geometry is not a POINT, but a %s.", geom.getKind().name()));
             }
 
-            List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
+            ADQLPoint point = (ADQLPoint) geom;
 
-            raArg = coords.get(0);
-            decArg = coords.get(1);
-
-            radiusArg = (DoubleWritable) radiusConverter.convert(arguments[1].get());
+            raArg = point.getRa();
+            decArg = point.getDec();
+            radiusArg = (Double) radiusConverter.convert(arguments[1].get());
         } else {
-            raArg = (DoubleWritable) raConverter.convert(arguments[0].get());
-            decArg = (DoubleWritable) decConverter.convert(arguments[1].get());
-            radiusArg = (DoubleWritable) radiusConverter.convert(arguments[2].get());
+            raArg = (Double) raConverter.convert(arguments[0].get());
+            decArg = (Double) decConverter.convert(arguments[1].get());
+            radiusArg = (Double) radiusConverter.convert(arguments[2].get());
         }
 
         if (raArg == null || decArg == null || radiusArg == null) {
             return null;
         }
 
-        value = Arrays.asList(new DoubleWritable[] {
-                raArg, decArg, radiusArg
-        });
-
-        return new ADQLCircle(value).serialize();
+        return new ADQLCircle(raArg, decArg, radiusArg).serialize();
     }
 
     @Override

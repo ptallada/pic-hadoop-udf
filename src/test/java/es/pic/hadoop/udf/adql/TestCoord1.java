@@ -11,7 +11,6 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,7 @@ public class TestCoord1 {
 
     UDFCoord1 udf = new UDFCoord1();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
     Object point;
     Object circle;
 
@@ -38,10 +37,10 @@ public class TestCoord1 {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -49,9 +48,9 @@ public class TestCoord1 {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(params));
@@ -92,7 +91,7 @@ public class TestCoord1 {
         assertEquals(udf.initialize(params), outputOI);
 
         assertEquals("10.0", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(point), new DeferredJavaObject(new DoubleWritable(30)),
+                new DeferredJavaObject(point), new DeferredJavaObject(new Double(30)),
         }).toString());
     }
 

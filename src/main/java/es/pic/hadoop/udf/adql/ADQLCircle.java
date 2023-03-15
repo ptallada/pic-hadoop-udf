@@ -3,62 +3,48 @@ package es.pic.hadoop.udf.adql;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.hadoop.hive.ql.metadata.HiveException;
+
 import com.google.common.geometry.S1Angle;
 import com.google.common.geometry.S2Cap;
 import com.google.common.geometry.S2LatLng;
 
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.io.ByteWritable;
-
 import healpix.essentials.HealpixProc;
-import healpix.essentials.Moc;
 import healpix.essentials.Pointing;
 import healpix.essentials.RangeSet;
 
 public class ADQLCircle extends ADQLGeometry {
 
-    private final static int INCLUSIVE_FACTOR = 4;
-
-    protected List<DoubleWritable> coords;
-
     public ADQLCircle(double ra, double dec, double radius) {
-        this.coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(ra), new DoubleWritable(dec), new DoubleWritable(radius)
-        });
+        this(Arrays.asList(new Double[] {
+                new Double(ra), new Double(dec), new Double(radius)
+        }));
     }
 
-    protected ADQLCircle(List<DoubleWritable> coords) {
-        this.coords = coords;
-    }
-
-    protected static ADQLCircle fromBlob(Object blob) {
-        return fromBlob(blob, ADQLGeometry.OI);
-    }
-
-    protected static ADQLCircle fromBlob(Object blob, StructObjectInspector OI) {
-        @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
-
-        return new ADQLCircle(coords);
+    protected ADQLCircle(List<Double> coords) {
+        super(ADQLGeometry.Kind.CIRCLE, coords, null);
     }
 
     public double getRa() {
-        return this.coords.get(0).get();
+        return getCoord(0);
     }
 
     public double getDec() {
-        return this.coords.get(1).get();
+        return getCoord(1);
     }
 
     public double getRadius() {
-        return this.coords.get(2).get();
+        return getCoord(2);
     }
 
     @Override
-    public ADQLCircle complement() throws HiveException {
+    public ADQLCircle complement() {
         return new ADQLCircle((getRa() + 180) % 360, -getDec(), 180 - getRadius());
+    }
+
+    @Override
+    public ADQLPoint centroid() {
+        return new ADQLPoint(getRa(), getDec());
     }
 
     @Override
@@ -76,24 +62,15 @@ public class ADQLCircle extends ADQLGeometry {
 
         Pointing pt = new Pointing(theta, phi);
 
-        RangeSet rs;
+        RangeSet hp_rs;
         try {
-            rs = HealpixProc.queryDiscInclusiveNest(order, pt, radius, INCLUSIVE_FACTOR);
+            hp_rs = HealpixProc.queryDiscInclusiveNest(order, pt, radius, INCLUSIVE_FACTOR);
         } catch (Exception e) {
             throw new HiveException(e);
         }
 
-        Moc moc = new Moc(rs, order);
+        ADQLRangeSet rs = ADQLRangeSet.fromHealPixRangeSet(hp_rs, order);
 
-        return new ADQLRegion(moc);
-    }
-
-    public Object serialize() {
-        Object blob = OI.create();
-
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.CIRCLE.tag));
-        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
-
-        return blob;
+        return new ADQLRegion(rs);
     }
 }

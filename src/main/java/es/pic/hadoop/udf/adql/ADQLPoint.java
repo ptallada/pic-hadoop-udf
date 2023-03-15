@@ -4,51 +4,39 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 import healpix.essentials.HealpixBase;
 import healpix.essentials.HealpixProc;
-import healpix.essentials.Moc;
 import healpix.essentials.Pointing;
 
 public class ADQLPoint extends ADQLGeometry {
 
-    protected List<DoubleWritable> coords;
-
     public ADQLPoint(double ra, double dec) {
-        this.coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(ra), new DoubleWritable(dec)
-        });
+        this(Arrays.asList(new Double[] {
+                new Double(ra), new Double(dec),
+        }));
     }
 
-    protected ADQLPoint(List<DoubleWritable> coords) {
-        this.coords = coords;
-    }
-
-    protected static ADQLPoint fromBlob(Object blob) {
-        return fromBlob(blob, ADQLGeometry.OI);
-    }
-
-    protected static ADQLPoint fromBlob(Object blob, StructObjectInspector OI) {
-        @SuppressWarnings("unchecked")
-        List<DoubleWritable> coords = (List<DoubleWritable>) OI.getStructFieldData(blob, ADQLGeometry.coordsField);
-
-        return new ADQLPoint(coords);
+    protected ADQLPoint(List<Double> coords) {
+        super(ADQLGeometry.Kind.POINT, coords, null);
     }
 
     public double getRa() {
-        return this.coords.get(0).get();
+        return getCoord(0);
     }
 
     public double getDec() {
-        return this.coords.get(1).get();
+        return getCoord(1);
     }
 
     @Override
     public ADQLGeometry complement() throws HiveException {
         throw new UnsupportedOperationException("Point geometry has no complement.");
+    }
+
+    @Override
+    public ADQLPoint centroid() {
+        return this;
     }
 
     @Override
@@ -73,18 +61,9 @@ public class ADQLPoint extends ADQLGeometry {
             throw new HiveException(e);
         }
 
-        Moc moc = new Moc();
-        moc.addPixel(order, ipix);
+        ADQLRangeSet rs = new ADQLRangeSet();
+        rs.addPixel(order, ipix);
 
-        return new ADQLRegion(moc);
-    }
-
-    public Object serialize() {
-        Object blob = OI.create();
-
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.POINT.tag));
-        OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
-
-        return blob;
+        return new ADQLRegion(rs);
     }
 }

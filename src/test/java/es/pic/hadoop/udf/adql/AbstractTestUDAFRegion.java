@@ -13,6 +13,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator.AbstractAggreg
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFParameterInfo;
 import org.apache.hadoop.hive.ql.udf.generic.SimpleGenericUDAFParameterInfo;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -95,8 +96,8 @@ public abstract class AbstractTestUDAFRegion {
     void wrongNumberOfArguments() throws Exception {
         GenericUDAFEvaluator eval = getEvaluator();
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class,
@@ -110,7 +111,7 @@ public abstract class AbstractTestUDAFRegion {
     void wrongTypeOfArguments() throws Exception {
         GenericUDAFEvaluator eval = getEvaluator();
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> eval.init(GenericUDAFEvaluator.Mode.COMPLETE, params));
@@ -155,7 +156,7 @@ public abstract class AbstractTestUDAFRegion {
             });
         }
 
-        assertEquals(eval.terminate(agg), output);
+        assertEquals(0, ObjectInspectorUtils.compare(eval.terminate(agg), ADQLGeometry.OI, output, ADQLGeometry.OI));
 
         eval.reset(agg);
     }
@@ -196,11 +197,11 @@ public abstract class AbstractTestUDAFRegion {
         evalPartial2.merge(agg2, partial1);
         partial2 = evalPartial2.terminatePartial(agg2);
 
-        assertEquals(partial1, partial2);
+        assertEquals(0, ObjectInspectorUtils.compare(partial1, ADQLGeometry.OI, partial2, ADQLGeometry.OI));
 
         evalFinal.merge(aggF, partial1);
         evalFinal.merge(aggF, partial2);
 
-        assertEquals(evalFinal.terminate(aggF), output);
+        assertEquals(0, ObjectInspectorUtils.compare(evalFinal.terminate(aggF), ADQLGeometry.OI, output, ADQLGeometry.OI));
     }
 }

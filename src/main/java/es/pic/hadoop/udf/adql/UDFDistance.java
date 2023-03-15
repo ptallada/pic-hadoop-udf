@@ -1,9 +1,5 @@
 package es.pic.hadoop.udf.adql;
 
-import java.util.List;
-
-import com.google.common.geometry.S2LatLng;
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
@@ -11,12 +7,14 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+
+import com.google.common.geometry.S2LatLng;
 
 // @formatter:off
 @Description(
@@ -30,22 +28,25 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFDistance extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+
+    StructObjectInspector inputOI1;
+    StructObjectInspector inputOI2;
 
     Converter ra1Converter;
     Converter dec1Converter;
     Converter ra2Converter;
     Converter dec2Converter;
 
-    DoubleWritable ra1Arg;
-    DoubleWritable dec1Arg;
-    DoubleWritable ra2Arg;
-    DoubleWritable dec2Arg;
+    Double ra1;
+    Double dec1;
+    Double ra2;
+    Double dec2;
 
-    Object geom1;
-    Object geom2;
-    ADQLGeometry.Kind kind1;
-    ADQLGeometry.Kind kind2;
+    Object blob1;
+    Object blob2;
+    ADQLGeometry geom1;
+    ADQLGeometry geom2;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -53,9 +54,11 @@ public class UDFDistance extends GenericUDF {
             if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
+            inputOI1 = (StructObjectInspector) arguments[0];
             if (!ObjectInspectorUtils.compareTypes(arguments[1], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(1, "Second argument has to be of ADQL geometry type.");
             }
+            inputOI2 = (StructObjectInspector) arguments[1];
         } else if (arguments.length == 4) {
             ra1Converter = ObjectInspectorConverters.getConverter(arguments[0], doubleOI);
             dec1Converter = ObjectInspectorConverters.getConverter(arguments[1], doubleOI);
@@ -72,45 +75,41 @@ public class UDFDistance extends GenericUDF {
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         if (arguments.length == 2) {
-            geom1 = arguments[0].get();
-            geom2 = arguments[1].get();
+            blob1 = arguments[0].get();
+            blob2 = arguments[1].get();
 
-            if (geom1 == null || geom2 == null) {
+            if (blob1 == null || blob2 == null) {
                 return null;
             }
 
-            kind1 = ADQLGeometry.getTag(geom1);
-            kind2 = ADQLGeometry.getTag(geom2);
+            geom1 = ADQLGeometry.fromBlob(blob1, inputOI1);
+            geom2 = ADQLGeometry.fromBlob(blob2, inputOI2);
 
-            if (kind1 != ADQLGeometry.Kind.POINT) {
+            if (!(geom1 instanceof ADQLPoint)) {
                 throw new UDFArgumentTypeException(0,
-                        String.format("First geometry is not a POINT, but a %s.", kind1.name()));
+                        String.format("First geometry is not a POINT, but a %s.", geom1.getKind().name()));
             }
-            if (kind2 != ADQLGeometry.Kind.POINT) {
+            if (!(geom2 instanceof ADQLPoint)) {
                 throw new UDFArgumentTypeException(1,
-                        String.format("Second geometry is not a POINT, but a %s.", kind2.name()));
+                        String.format("Second geometry is not a POINT, but a %s.", geom2.getKind().name()));
             }
 
-            List<DoubleWritable> coords1 = ADQLGeometry.getCoords(geom1);
-            List<DoubleWritable> coords2 = ADQLGeometry.getCoords(geom2);
-
-            ra1Arg = coords1.get(0);
-            dec1Arg = coords1.get(1);
-            ra2Arg = coords2.get(0);
-            dec2Arg = coords2.get(1);
+            ra1 = geom1.getCoord(0);
+            dec1 = geom1.getCoord(1);
+            ra2 = geom2.getCoord(0);
+            dec2 = geom2.getCoord(1);
         } else {
-            ra1Arg = (DoubleWritable) ra1Converter.convert(arguments[0].get());
-            dec1Arg = (DoubleWritable) dec1Converter.convert(arguments[1].get());
-            ra2Arg = (DoubleWritable) ra2Converter.convert(arguments[2].get());
-            dec2Arg = (DoubleWritable) dec2Converter.convert(arguments[3].get());
+            ra1 = (Double) ra1Converter.convert(arguments[0].get());
+            dec1 = (Double) dec1Converter.convert(arguments[1].get());
+            ra2 = (Double) ra2Converter.convert(arguments[2].get());
+            dec2 = (Double) dec2Converter.convert(arguments[3].get());
         }
 
-        if (ra1Arg == null || dec1Arg == null || ra2Arg == null || dec2Arg == null) {
+        if (ra1 == null || dec1 == null || ra2 == null || dec2 == null) {
             return null;
         }
 
-        return new DoubleWritable(S2LatLng.fromDegrees(dec1Arg.get(), ra1Arg.get())
-                .getDistance(S2LatLng.fromDegrees(dec2Arg.get(), ra2Arg.get())).degrees());
+        return new Double(S2LatLng.fromDegrees(dec1, ra1).getDistance(S2LatLng.fromDegrees(dec2, ra2)).degrees());
     }
 
     @Override

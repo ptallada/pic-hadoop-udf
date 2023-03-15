@@ -10,7 +10,6 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
@@ -29,18 +28,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFPolygon extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
 
     List<Converter> coordConverters;
-    List<DoubleWritable> coordArgs;
+    List<Double> coordArgs;
 
     boolean has_points = false;
     boolean has_coords = false;
 
-    DoubleWritable coordArg;
-    Object geom;
-    ADQLGeometry.Kind kind;
-
+    Double coordArg;
+    Object blob;
+    ADQLGeometry geom;
     Object polygon;
 
     @Override
@@ -52,8 +50,9 @@ public class UDFPolygon extends GenericUDF {
             for (int i = 0; i < arguments.length; i++) {
                 oi = arguments[i];
 
-                if (ObjectInspectorUtils.compareTypes(oi, ADQLGeometry.OI)) {
+                if (ObjectInspectorUtils.compareTypes(arguments[i], ADQLGeometry.OI)) {
                     has_points = true;
+                    coordConverters.add(ObjectInspectorConverters.getConverter(oi, ADQLGeometry.OI));
                 } else {
                     has_coords = true;
                     coordConverters.add(ObjectInspectorConverters.getConverter(oi, doubleOI));
@@ -84,10 +83,10 @@ public class UDFPolygon extends GenericUDF {
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-        coordArgs = new ArrayList<DoubleWritable>();
+        coordArgs = new ArrayList<Double>();
         if (has_coords) {
             for (int i = 0; i < arguments.length; i++) {
-                coordArg = (DoubleWritable) coordConverters.get(i).convert(arguments[i].get());
+                coordArg = (Double) coordConverters.get(i).convert(arguments[i].get());
 
                 if (coordArg == null) {
                     return null;
@@ -97,23 +96,23 @@ public class UDFPolygon extends GenericUDF {
             }
         } else {
             for (int i = 0; i < arguments.length; i++) {
-                geom = arguments[i].get();
+                blob = arguments[i].get();
 
-                if (geom == null) {
+                if (blob == null) {
                     return null;
                 }
-
-                kind = ADQLGeometry.getTag(geom);
-
-                if (kind != ADQLGeometry.Kind.POINT) {
+                
+                geom = ADQLGeometry.fromBlob(coordConverters.get(i).convert(blob), ADQLGeometry.OI);
+                
+                if (!(geom instanceof ADQLPoint)) {
                     throw new UDFArgumentTypeException(i,
-                            String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
+                            String.format("Provided geometry is not a POINT, but a %s.", geom.getKind().name()));
                 }
 
-                List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
+                ADQLPoint point = (ADQLPoint) geom;
 
-                coordArgs.add(coords.get(0));
-                coordArgs.add(coords.get(1));
+                coordArgs.add(point.getRa());
+                coordArgs.add(point.getDec());
             }
         }
 

@@ -1,80 +1,48 @@
 package es.pic.hadoop.udf.adql;
 
-import org.apache.hadoop.hive.ql.metadata.HiveException;
-import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
-import org.apache.hadoop.hive.serde2.io.ByteWritable;
-import org.apache.hadoop.io.BytesWritable;
-
-import healpix.essentials.Moc;
+import healpix.essentials.HealpixBase;
 
 public class ADQLRegion extends ADQLGeometry {
 
     final static double hpix29_area = 1.1927080055488187e-14;
 
-    protected Moc moc;
-
-    public ADQLRegion(Moc moc) {
-        this.moc = moc;
-    }
-
-    protected static ADQLRegion fromBlob(Object blob) throws HiveException {
-        return fromBlob(blob, ADQLGeometry.OI);
-    }
-
-    protected static ADQLRegion fromBlob(Object blob, StructObjectInspector OI) throws HiveException {
-        byte[] bytes = ADQLGeometry.getBytes(blob, OI).getBytes();
-        Moc moc;
-
-        try {
-            moc = Moc.fromCompressed(bytes);
-        } catch (Exception e) {
-            throw new HiveException(e);
-        }
-
-        return new ADQLRegion(moc);
+    public ADQLRegion(ADQLRangeSet rs) {
+        super(ADQLGeometry.Kind.REGION, null, rs);
     }
 
     @Override
-    public ADQLRegion complement() throws HiveException {
-        return new ADQLRegion(this.moc.complement());
+    public ADQLRegion complement() {
+        ADQLRangeSet full = new ADQLRangeSet(new long[] {
+                0L, 12L * (1L << (2 * HealpixBase.order_max))
+        });
+        return new ADQLRegion(full.difference(getRangeSet()));
+    }
+
+    @Override
+    public ADQLPoint centroid() {
+        throw new UnsupportedOperationException("REGIONs centroid are not supported yet.");
     }
 
     @Override
     public double area() {
-        return moc.getRangeSet().nval() * hpix29_area;
+        return getRangeSet().nval() * hpix29_area;
     }
 
-    public ADQLRegion toRegion() throws HiveException {
+    public ADQLRegion toRegion() {
         return this;
     }
 
     @Override
-    public ADQLRegion toRegion(byte order) throws HiveException {
+    public ADQLRegion toRegion(byte order) {
         // TODO: maybe use degradedToOrder(int order, boolean keepPartialCells)
         return this;
     }
 
     public boolean contains(ADQLRegion other) {
-        return this.moc.contains(other.moc);
+        return getRangeSet().contains(other.getRangeSet());
     }
 
     public boolean intersects(ADQLRegion other) {
-        return this.moc.overlaps(other.moc);
-    }
-
-    public Object serialize() throws HiveException {
-        Object blob = OI.create();
-        byte[] bytes;
-
-        try {
-            bytes = moc.toCompressed();
-        } catch (Exception e) {
-            throw new HiveException(e);
-        }
-
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(Kind.REGION.tag));
-        OI.setStructFieldData(blob, ADQLGeometry.mocField, new BytesWritable(bytes));
-
-        return blob;
+        return getRangeSet().overlaps(other.getRangeSet());
     }
 }
