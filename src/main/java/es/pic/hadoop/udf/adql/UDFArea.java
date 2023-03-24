@@ -7,6 +7,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
@@ -24,7 +25,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFArea extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     StructObjectInspector inputOI;
 
@@ -55,7 +56,7 @@ public class UDFArea extends GenericUDF {
 
         geom = ADQLGeometry.fromBlob(blob, inputOI);
 
-        return new Double(geom.area());
+        return new DoubleWritable(geom.area());
     }
 
     @Override

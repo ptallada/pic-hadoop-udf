@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ListObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
@@ -17,16 +19,17 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.BinaryObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.BytesWritable;
 
 public abstract class ADQLGeometry {
 
     protected final static int INCLUSIVE_FACTOR = 4;
     protected final static byte DEFAULT_ORDER = 10;
 
-    private static final PrimitiveObjectInspector tagOI = PrimitiveObjectInspectorFactory.javaByteObjectInspector;
-    private static final BinaryObjectInspector rsOI = PrimitiveObjectInspectorFactory.javaByteArrayObjectInspector;
+    private static final PrimitiveObjectInspector tagOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
+    private static final BinaryObjectInspector rsOI = PrimitiveObjectInspectorFactory.writableBinaryObjectInspector;
     private static final ListObjectInspector coordsOI = ObjectInspectorFactory
-            .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.javaDoubleObjectInspector);
+            .getStandardListObjectInspector(PrimitiveObjectInspectorFactory.writableDoubleObjectInspector);
 
     public static final StandardStructObjectInspector OI = ObjectInspectorFactory
             .getStandardStructObjectInspector(Arrays.asList(new String[] {
@@ -61,13 +64,13 @@ public abstract class ADQLGeometry {
             }
         }
 
-        public static Kind valueOfTag(Byte tag) {
-            return BY_TAG.get(tag);
+        public static Kind valueOfTag(ByteWritable tag) {
+            return BY_TAG.get(tag.get());
         }
     }
 
     private Kind kind;
-    private List<Double> coords;
+    private List<DoubleWritable> coords;
     private ADQLRangeSet rs;
 
     private static Kind getTag(Object blob, StructObjectInspector OI) {
@@ -76,11 +79,11 @@ public abstract class ADQLGeometry {
         ObjectInspector extOI = field.getFieldObjectInspector();
         Converter converter = ObjectInspectorConverters.getConverter(extOI, tagOI);
 
-        return Kind.valueOfTag((Byte) converter.convert(obj));
+        return Kind.valueOfTag((ByteWritable) converter.convert(obj));
     }
 
     @SuppressWarnings("unchecked")
-    private static List<Double> getCoords(Object blob, StructObjectInspector OI) {
+    private static List<DoubleWritable> getCoords(Object blob, StructObjectInspector OI) {
         StructField field = OI.getStructFieldRef("coords");
         Object obj = OI.getStructFieldData(blob, field);
         if (obj == null) {
@@ -88,7 +91,7 @@ public abstract class ADQLGeometry {
         } else {
             ObjectInspector extOI = field.getFieldObjectInspector();
             Converter converter = ObjectInspectorConverters.getConverter(extOI, coordsOI);
-            return (List<Double>) converter.convert(obj);
+            return (List<DoubleWritable>) converter.convert(obj);
         }
     }
 
@@ -100,11 +103,11 @@ public abstract class ADQLGeometry {
         } else {
             ObjectInspector extOI = field.getFieldObjectInspector();
             Converter converter = ObjectInspectorConverters.getConverter(extOI, rsOI);
-            return new ADQLRangeSet((byte[]) converter.convert(obj));
+            return new ADQLRangeSet((BytesWritable) converter.convert(obj));
         }
     }
 
-    protected ADQLGeometry(Kind kind, List<Double> coords, ADQLRangeSet rs) {
+    protected ADQLGeometry(Kind kind, List<DoubleWritable> coords, ADQLRangeSet rs) {
         this.kind = kind;
         this.coords = coords;
         this.rs = rs;
@@ -112,7 +115,7 @@ public abstract class ADQLGeometry {
 
     protected static ADQLGeometry fromBlob(Object blob, StructObjectInspector OI) {
         Kind kind = getTag(blob, OI);
-        List<Double> coords = getCoords(blob, OI);
+        List<DoubleWritable> coords = getCoords(blob, OI);
         ADQLRangeSet rs = getRs(blob, OI);
 
         switch (kind) {
@@ -139,8 +142,8 @@ public abstract class ADQLGeometry {
         }
     }
 
-    protected double getCoord(int i) {
-        return this.coords.get(i).doubleValue();
+    protected DoubleWritable getCoord(int i) {
+        return this.coords.get(i);
     }
 
     protected ADQLRangeSet getRangeSet() {
@@ -162,12 +165,12 @@ public abstract class ADQLGeometry {
     public Object serialize() {
         Object blob = OI.create();
 
-        OI.setStructFieldData(blob, ADQLGeometry.tagField, kind.value);
+        OI.setStructFieldData(blob, ADQLGeometry.tagField, new ByteWritable(kind.value));
         OI.setStructFieldData(blob, ADQLGeometry.coordsField, coords);
         if (rs == null) {
             OI.setStructFieldData(blob, ADQLGeometry.rsField, null);
         } else {
-            OI.setStructFieldData(blob, ADQLGeometry.rsField, rs.getRangesAsBytes());
+            OI.setStructFieldData(blob, ADQLGeometry.rsField, new BytesWritable(rs.getRangesAsBytes()));
         }
         return blob;
     }

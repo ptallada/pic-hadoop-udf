@@ -3,6 +3,8 @@ package es.pic.hadoop.udf.adql;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
 
+import org.apache.hadoop.io.BytesWritable;
+
 import healpix.essentials.Compressor;
 import healpix.essentials.HealpixUtils;
 import healpix.essentials.RangeSet;
@@ -594,10 +596,14 @@ public class ADQLRangeSet {
 
     private static final int maxorder = 29;
 
-    public ADQLRangeSet(byte[] data) {
-        this(data.length / Long.BYTES / 2);
-        ByteBuffer.wrap(data).asLongBuffer().get(r);
-        sz = data.length / Long.BYTES;
+    public ADQLRangeSet(BytesWritable data) {
+        this(data.getBytes(), data.getLength());
+    }
+
+    public ADQLRangeSet(byte[] data, int length) {
+        this(length / Long.BYTES / 2);
+        ByteBuffer.wrap(data, 0, length).asLongBuffer().get(r);
+        sz = length / Long.BYTES;
     }
 
     public byte[] getRangesAsBytes() {

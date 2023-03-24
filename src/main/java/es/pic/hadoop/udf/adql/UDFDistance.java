@@ -7,6 +7,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
@@ -28,7 +29,7 @@ import com.google.common.geometry.S2LatLng;
 )
 // @formatter:on
 public class UDFDistance extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     StructObjectInspector inputOI1;
     StructObjectInspector inputOI2;
@@ -38,10 +39,10 @@ public class UDFDistance extends GenericUDF {
     Converter ra2Converter;
     Converter dec2Converter;
 
-    Double ra1;
-    Double dec1;
-    Double ra2;
-    Double dec2;
+    DoubleWritable ra1;
+    DoubleWritable dec1;
+    DoubleWritable ra2;
+    DoubleWritable dec2;
 
     Object blob1;
     Object blob2;
@@ -99,17 +100,18 @@ public class UDFDistance extends GenericUDF {
             ra2 = geom2.getCoord(0);
             dec2 = geom2.getCoord(1);
         } else {
-            ra1 = (Double) ra1Converter.convert(arguments[0].get());
-            dec1 = (Double) dec1Converter.convert(arguments[1].get());
-            ra2 = (Double) ra2Converter.convert(arguments[2].get());
-            dec2 = (Double) dec2Converter.convert(arguments[3].get());
+            ra1 = (DoubleWritable) ra1Converter.convert(arguments[0].get());
+            dec1 = (DoubleWritable) dec1Converter.convert(arguments[1].get());
+            ra2 = (DoubleWritable) ra2Converter.convert(arguments[2].get());
+            dec2 = (DoubleWritable) dec2Converter.convert(arguments[3].get());
         }
 
         if (ra1 == null || dec1 == null || ra2 == null || dec2 == null) {
             return null;
         }
 
-        return new Double(S2LatLng.fromDegrees(dec1, ra1).getDistance(S2LatLng.fromDegrees(dec2, ra2)).degrees());
+        return new DoubleWritable(S2LatLng.fromDegrees(dec1.get(), ra1.get())
+                .getDistance(S2LatLng.fromDegrees(dec2.get(), ra2.get())).degrees());
     }
 
     @Override

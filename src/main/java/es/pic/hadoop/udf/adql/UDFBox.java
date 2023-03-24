@@ -10,6 +10,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
@@ -32,7 +33,7 @@ import com.google.common.geometry.S2LatLngRect;
 )
 // @formatter:on
 public class UDFBox extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     StructObjectInspector inputOI;
 
@@ -41,16 +42,10 @@ public class UDFBox extends GenericUDF {
     Converter widthConverter;
     Converter heightConverter;
 
-    Double raArg;
-    Double decArg;
-    Double widthArg;
-    Double heightArg;
-
-    double ra;
-    double dec;
-    double width;
-    double height;
-
+    DoubleWritable raArg;
+    DoubleWritable decArg;
+    DoubleWritable widthArg;
+    DoubleWritable heightArg;
     Object blob;
     ADQLGeometry geom;
 
@@ -58,7 +53,7 @@ public class UDFBox extends GenericUDF {
     S2LatLng size;
     S2LatLngRect box;
 
-    List<Double> coords;
+    List<DoubleWritable> coords;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -106,30 +101,30 @@ public class UDFBox extends GenericUDF {
             raArg = point.getRa();
             decArg = point.getDec();
 
-            widthArg = (Double) widthConverter.convert(arguments[1].get());
-            heightArg = (Double) heightConverter.convert(arguments[2].get());
+            widthArg = (DoubleWritable) widthConverter.convert(arguments[1].get());
+            heightArg = (DoubleWritable) heightConverter.convert(arguments[2].get());
 
         } else {
-            raArg = (Double) raConverter.convert(arguments[0].get());
-            decArg = (Double) decConverter.convert(arguments[1].get());
-            widthArg = (Double) widthConverter.convert(arguments[2].get());
-            heightArg = (Double) heightConverter.convert(arguments[3].get());
+            raArg = (DoubleWritable) raConverter.convert(arguments[0].get());
+            decArg = (DoubleWritable) decConverter.convert(arguments[1].get());
+            widthArg = (DoubleWritable) widthConverter.convert(arguments[2].get());
+            heightArg = (DoubleWritable) heightConverter.convert(arguments[3].get());
         }
 
         if (raArg == null || decArg == null || widthArg == null || heightArg == null) {
             return null;
         }
 
-        center = S2LatLng.fromDegrees(decArg, raArg);
-        size = S2LatLng.fromDegrees(heightArg, widthArg);
+        center = S2LatLng.fromDegrees(decArg.get(), raArg.get());
+        size = S2LatLng.fromDegrees(heightArg.get(), widthArg.get());
         box = S2LatLngRect.fromCenterSize(center, size);
 
-        coords = new ArrayList<Double>();
+        coords = new ArrayList<DoubleWritable>();
         for (int i = 0; i < 4; i++) {
             center = box.getVertex(i);
 
-            coords.add(new Double(center.lngDegrees()));
-            coords.add(new Double(center.latDegrees()));
+            coords.add(new DoubleWritable(center.lngDegrees()));
+            coords.add(new DoubleWritable(center.latDegrees()));
         }
 
         return new ADQLPolygon(coords).serialize();

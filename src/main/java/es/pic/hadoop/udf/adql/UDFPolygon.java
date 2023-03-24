@@ -10,6 +10,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
@@ -28,15 +29,15 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFPolygon extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     List<Converter> coordConverters;
-    List<Double> coordArgs;
+    List<DoubleWritable> coordArgs;
 
     boolean has_points = false;
     boolean has_coords = false;
 
-    Double coordArg;
+    DoubleWritable coordArg;
     Object blob;
     ADQLGeometry geom;
     Object polygon;
@@ -83,10 +84,10 @@ public class UDFPolygon extends GenericUDF {
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-        coordArgs = new ArrayList<Double>();
+        coordArgs = new ArrayList<DoubleWritable>();
         if (has_coords) {
             for (int i = 0; i < arguments.length; i++) {
-                coordArg = (Double) coordConverters.get(i).convert(arguments[i].get());
+                coordArg = (DoubleWritable) coordConverters.get(i).convert(arguments[i].get());
 
                 if (coordArg == null) {
                     return null;
@@ -101,9 +102,9 @@ public class UDFPolygon extends GenericUDF {
                 if (blob == null) {
                     return null;
                 }
-                
+
                 geom = ADQLGeometry.fromBlob(coordConverters.get(i).convert(blob), ADQLGeometry.OI);
-                
+
                 if (!(geom instanceof ADQLPoint)) {
                     throw new UDFArgumentTypeException(i,
                             String.format("Provided geometry is not a POINT, but a %s.", geom.getKind().name()));

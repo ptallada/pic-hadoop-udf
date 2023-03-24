@@ -21,7 +21,7 @@ public class TestContains {
 
     UDFContains udf = new UDFContains();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
+    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
     ADQLRangeSet rs;
     Object point1;

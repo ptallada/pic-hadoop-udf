@@ -24,8 +24,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFCoord1 extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
-    
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
+
     StructObjectInspector inputOI;
 
     Object blob;
@@ -34,7 +34,7 @@ public class UDFCoord1 extends GenericUDF {
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
         if (arguments.length == 1) {
-            
+
             if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "Argument has to be of ADQL geometry type.");
             }

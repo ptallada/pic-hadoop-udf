@@ -88,7 +88,7 @@ public class UDFPoint extends GenericUDF {
             }
         }
 
-        return new ADQLPoint(raArg.get(), decArg.get()).serialize();
+        return new ADQLPoint(raArg, decArg).serialize();
     }
 
     @Override

@@ -14,6 +14,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.BooleanWritable;
 
 import com.google.common.geometry.S1Angle;
 import com.google.common.geometry.S2Cap;
@@ -33,7 +34,7 @@ import com.google.common.geometry.S2Point;
 )
 // @formatter:on
 public class UDFContains extends GenericUDF {
-    final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
+    final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
     StructObjectInspector inputOI1;
     StructObjectInspector inputOI2;
@@ -97,72 +98,72 @@ public class UDFContains extends GenericUDF {
             region1 = geom1.toRegion();
             region2 = geom2.toRegion();
 
-            return new Boolean(region2.contains(region1));
+            return new BooleanWritable(region2.contains(region1));
         }
 
         if (geom1 instanceof ADQLPoint && geom2 instanceof ADQLCircle) {
             // POINT inside CIRCLE
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            point2 = S2LatLng.fromDegrees(geom2.getCoord(1), geom2.getCoord(0)).toPoint();
-            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(geom2.getCoord(2)));
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            point2 = S2LatLng.fromDegrees(geom2.getCoord(1).get(), geom2.getCoord(0).get()).toPoint();
+            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(geom2.getCoord(2).get()));
 
-            return new Boolean(circle2.contains(point1));
+            return new BooleanWritable(circle2.contains(point1));
         } else if (geom1 instanceof ADQLPoint && geom2 instanceof ADQLPolygon) {
             // POINT inside POLYGON
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom2.getNumCoords(); i += 2) {
-                ra = geom2.getCoord(i);
-                dec = geom2.getCoord(i + 1);
+                ra = geom2.getCoord(i).get();
+                dec = geom2.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
 
             polygon2 = new S2Loop(vertices);
 
-            return new Boolean(polygon2.contains(point1));
+            return new BooleanWritable(polygon2.contains(point1));
 
         } else if (geom1 instanceof ADQLCircle && geom2 instanceof ADQLCircle) {
             // CIRCLE inside CIRCLE
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            point2 = S2LatLng.fromDegrees(geom2.getCoord(1), geom2.getCoord(0)).toPoint();
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            point2 = S2LatLng.fromDegrees(geom2.getCoord(1).get(), geom2.getCoord(0).get()).toPoint();
 
-            circle1 = S2Cap.fromAxisAngle(point1, S1Angle.degrees(geom1.getCoord(2)));
-            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(geom2.getCoord(2)));
+            circle1 = S2Cap.fromAxisAngle(point1, S1Angle.degrees(geom1.getCoord(2).get()));
+            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(geom2.getCoord(2).get()));
 
-            return new Boolean(circle2.contains(circle1));
+            return new BooleanWritable(circle2.contains(circle1));
 
         } else if (geom1 instanceof ADQLCircle && geom2 instanceof ADQLPolygon) {
             // CIRCLE inside POLYGON
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            radius = S1Angle.degrees(geom1.getCoord(2));
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            radius = S1Angle.degrees(geom1.getCoord(2).get());
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom2.getNumCoords(); i += 2) {
-                ra = geom2.getCoord(i);
-                dec = geom2.getCoord(i + 1);
+                ra = geom2.getCoord(i).get();
+                dec = geom2.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
 
             polygon2 = new S2Loop(vertices);
 
-            return new Boolean(polygon2.contains(point1) && polygon2.getDistance(point1).greaterThan(radius));
+            return new BooleanWritable(polygon2.contains(point1) && polygon2.getDistance(point1).greaterThan(radius));
 
         } else if (geom1 instanceof ADQLPolygon && geom2 instanceof ADQLCircle) {
             // POLYGON inside CIRCLE
-            point2 = S2LatLng.fromDegrees(geom2.getCoord(1), geom2.getCoord(0)).toPoint();
-            radius = S1Angle.degrees(geom2.getCoord(2));
+            point2 = S2LatLng.fromDegrees(geom2.getCoord(1).get(), geom2.getCoord(0).get()).toPoint();
+            radius = S1Angle.degrees(geom2.getCoord(2).get());
             circle2 = S2Cap.fromAxisAngle(point2, radius);
 
             // Circle must contain every vertex
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom1.getNumCoords(); i += 2) {
-                ra = geom1.getCoord(i);
-                dec = geom1.getCoord(i + 1);
+                ra = geom1.getCoord(i).get();
+                dec = geom1.getCoord(i + 1).get();
 
                 point1 = S2LatLng.fromDegrees(dec, ra).toPoint();
                 if (!circle2.contains(point1)) {
-                    return new Boolean(false);
+                    return new BooleanWritable(false);
                 } else {
                     vertices.add(point1);
                 }
@@ -174,30 +175,30 @@ public class UDFContains extends GenericUDF {
             point2 = circle2.axis();
             radius = circle2.angle();
             if (polygon2.contains(point2) || polygon2.getDistance(point2).lessOrEquals(radius)) {
-                return new Boolean(false);
+                return new BooleanWritable(false);
             } else {
-                return new Boolean(true);
+                return new BooleanWritable(true);
             }
 
         } else { // (geom1 instanceof ADQLPolygon && geom2 instanceof ADQLPolygon)
             // POLYGON inside POLYGON
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom1.getNumCoords(); i += 2) {
-                ra = geom1.getCoord(i);
-                dec = geom1.getCoord(i + 1);
+                ra = geom1.getCoord(i).get();
+                dec = geom1.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
             polygon1 = new S2Loop(vertices);
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom2.getNumCoords(); i += 2) {
-                ra = geom2.getCoord(i);
-                dec = geom2.getCoord(i + 1);
+                ra = geom2.getCoord(i).get();
+                dec = geom2.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
             polygon2 = new S2Loop(vertices);
 
-            return new Boolean(polygon2.containsNested(polygon1));
+            return new BooleanWritable(polygon2.containsNested(polygon1));
         }
     }
 

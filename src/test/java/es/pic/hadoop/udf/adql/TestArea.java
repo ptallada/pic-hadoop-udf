@@ -21,7 +21,7 @@ public class TestArea {
 
     UDFArea udf = new UDFArea();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     Object point;
     Object circle;
@@ -58,7 +58,7 @@ public class TestArea {
     @Test
     void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(params));

@@ -21,7 +21,7 @@ public class TestIntersects {
 
     UDFIntersects udf = new UDFIntersects();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
+    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
     ADQLRangeSet rs;
     Object point1;

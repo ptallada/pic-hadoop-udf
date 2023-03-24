@@ -11,6 +11,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ public class TestDistance {
 
     UDFDistance udf = new UDFDistance();
 
-    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     Object point1;
     Object point2;
@@ -90,30 +91,30 @@ public class TestDistance {
     @Test
     void nullCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
 
         };
 
         assertEquals(udf.initialize(params), outputOI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(null), new DeferredJavaObject(new Double(0)),
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(null),
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(null),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
-                new DeferredJavaObject(null), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(0)),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(null),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(null),
         }));
     }
 
@@ -152,17 +153,17 @@ public class TestDistance {
     @Test
     void validCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
         assertEquals(udf.initialize(params), outputOI);
 
         assertEquals("26.326607525563194", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Double(10)), new DeferredJavaObject(new Double(20)),
-                new DeferredJavaObject(new Double(30)), new DeferredJavaObject(new Double(40)),
+                new DeferredJavaObject(new DoubleWritable(10)), new DeferredJavaObject(new DoubleWritable(20)),
+                new DeferredJavaObject(new DoubleWritable(30)), new DeferredJavaObject(new DoubleWritable(40)),
         }).toString());
     }
 

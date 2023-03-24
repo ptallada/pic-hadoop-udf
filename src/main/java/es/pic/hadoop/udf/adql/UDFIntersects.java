@@ -34,7 +34,7 @@ import com.google.common.geometry.S2Point;
 )
 // @formatter:on
 public class UDFIntersects extends GenericUDF {
-    final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.javaBooleanObjectInspector;
+    final static ObjectInspector booleanOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
     StructObjectInspector inputOI1;
     StructObjectInspector inputOI2;
@@ -95,15 +95,15 @@ public class UDFIntersects extends GenericUDF {
             region1 = geom1.toRegion();
             region2 = geom2.toRegion();
 
-            return new Boolean(region1.intersects(region2));
+            return new BooleanWritable(region1.intersects(region2));
         }
 
         if (geom1 instanceof ADQLPoint && geom2 instanceof ADQLPoint) {
             // POINT overlaps POINT
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            point2 = S2LatLng.fromDegrees(geom2.getCoord(1), geom2.getCoord(0)).toPoint();
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            point2 = S2LatLng.fromDegrees(geom2.getCoord(1).get(), geom2.getCoord(0).get()).toPoint();
 
-            return new Boolean(point1.equalsPoint(point2));
+            return new BooleanWritable(point1.equalsPoint(point2));
         }
 
         if ((geom1 instanceof ADQLPoint && geom2 instanceof ADQLCircle)
@@ -116,9 +116,9 @@ public class UDFIntersects extends GenericUDF {
             }
 
             // POINT overlaps CIRCLE
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            point2 = S2LatLng.fromDegrees(geom2.getCoord(1), geom2.getCoord(0)).toPoint();
-            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(geom2.getCoord(2)));
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            point2 = S2LatLng.fromDegrees(geom2.getCoord(1).get(), geom2.getCoord(0).get()).toPoint();
+            circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(geom2.getCoord(2).get()));
 
             return new BooleanWritable(circle2.contains(point1));
 
@@ -132,15 +132,12 @@ public class UDFIntersects extends GenericUDF {
             }
 
             // POINT overlaps POLYGON
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-
-            double ra;
-            double dec;
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom2.getNumCoords(); i += 2) {
-                ra = geom2.getCoord(i);
-                dec = geom2.getCoord(i + 1);
+                ra = geom2.getCoord(i).get();
+                dec = geom2.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
 
@@ -150,11 +147,11 @@ public class UDFIntersects extends GenericUDF {
 
         } else if (geom1 instanceof ADQLCircle && geom2 instanceof ADQLCircle) {
             // CIRCLE overlaps CIRCLE
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            point2 = S2LatLng.fromDegrees(geom2.getCoord(1), geom2.getCoord(0)).toPoint();
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            point2 = S2LatLng.fromDegrees(geom2.getCoord(1).get(), geom2.getCoord(0).get()).toPoint();
 
-            radius1 = geom1.getCoord(2);
-            radius2 = geom2.getCoord(2);
+            radius1 = geom1.getCoord(2).get();
+            radius2 = geom2.getCoord(2).get();
 
             circle1 = S2Cap.fromAxisAngle(point1, S1Angle.degrees(radius1));
             circle2 = S2Cap.fromAxisAngle(point2, S1Angle.degrees(radius2));
@@ -171,40 +168,34 @@ public class UDFIntersects extends GenericUDF {
             }
 
             // CIRCLE overlaps POLYGON
-            point1 = S2LatLng.fromDegrees(geom1.getCoord(1), geom1.getCoord(0)).toPoint();
-            double radius = geom1.getCoord(2);
-
-            double ra;
-            double dec;
+            point1 = S2LatLng.fromDegrees(geom1.getCoord(1).get(), geom1.getCoord(0).get()).toPoint();
+            radius1 = geom1.getCoord(2).get();
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom2.getNumCoords(); i += 2) {
-                ra = geom2.getCoord(i);
-                dec = geom2.getCoord(i + 1);
+                ra = geom2.getCoord(i).get();
+                dec = geom2.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
 
             polygon2 = new S2Loop(vertices);
 
-            return new BooleanWritable(polygon2.contains(point1) || polygon2.getDistance(point1).degrees() <= radius);
+            return new BooleanWritable(polygon2.contains(point1) || polygon2.getDistance(point1).degrees() <= radius1);
 
         } else { // (geom1 instanceof POLYGON && geom2 instanceof POLYGON) {
             // POLYGON overlaps POLYGON
-            double ra;
-            double dec;
-
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom1.getNumCoords(); i += 2) {
-                ra = geom1.getCoord(i);
-                dec = geom1.getCoord(i + 1);
+                ra = geom1.getCoord(i).get();
+                dec = geom1.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
             polygon1 = new S2Loop(vertices);
 
             vertices = new ArrayList<S2Point>();
             for (int i = 0; i < geom2.getNumCoords(); i += 2) {
-                ra = geom2.getCoord(i);
-                dec = geom2.getCoord(i + 1);
+                ra = geom2.getCoord(i).get();
+                dec = geom2.getCoord(i + 1).get();
                 vertices.add(S2LatLng.fromDegrees(dec, ra).toPoint());
             }
             polygon2 = new S2Loop(vertices);

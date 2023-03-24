@@ -10,8 +10,10 @@ import java.util.Arrays;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+import org.apache.hadoop.io.LongWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -42,7 +44,7 @@ public class TestPoint {
     @Test
     void nullPixel() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaLongObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
@@ -55,17 +57,17 @@ public class TestPoint {
     @Test
     void nullCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(null), new DeferredJavaObject(new Double(20))
+                new DeferredJavaObject(null), new DeferredJavaObject(new DoubleWritable(20))
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Double(20)), new DeferredJavaObject(null),
+                new DeferredJavaObject(new DoubleWritable(20)), new DeferredJavaObject(null),
         }));
         assertNull(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(null), new DeferredJavaObject(null),
@@ -75,40 +77,40 @@ public class TestPoint {
     @Test
     void invalidPixel() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaLongObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertThrows(HiveException.class, () -> udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Long(-1)),
+                new DeferredJavaObject(new LongWritable(-1)),
         }));
     }
 
     @Test
     void validPixels() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaLongObjectInspector,
+                PrimitiveObjectInspectorFactory.writableLongObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("[0, [45.0, 7.114779521089076E-8], null]", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Long(0)),
+                new DeferredJavaObject(new LongWritable(0)),
         }).toString());
     }
 
     @Test
     void validDoubleCoords() throws HiveException {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
         assertEquals("[0, [0.0, 0.0], null]", udf.evaluate(new DeferredJavaObject[] {
-                new DeferredJavaObject(new Double(0)), new DeferredJavaObject(new Double(0)),
+                new DeferredJavaObject(new DoubleWritable(0)), new DeferredJavaObject(new DoubleWritable(0)),
         }).toString());
     }
 

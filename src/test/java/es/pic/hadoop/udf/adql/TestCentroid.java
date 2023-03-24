@@ -56,7 +56,7 @@ public class TestCentroid {
     @Test
     void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.javaDoubleObjectInspector,
+                PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(params));

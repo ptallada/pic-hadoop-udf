@@ -7,6 +7,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
@@ -27,14 +28,14 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 // @formatter:on
 public class UDFRegion extends GenericUDF {
 
-    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.javaByteObjectInspector;
+    final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
 
     StructObjectInspector inputOI;
 
     Converter orderConverter;
 
     Object blob;
-    Byte order;
+    ByteWritable orderArg;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -49,9 +50,6 @@ public class UDFRegion extends GenericUDF {
 
         if (arguments.length == 2) {
             orderConverter = ObjectInspectorConverters.getConverter(arguments[1], byteOI);
-        } else {
-            // Use default value
-            order = null;
         }
 
         return ADQLGeometry.OI;
@@ -66,12 +64,12 @@ public class UDFRegion extends GenericUDF {
         }
 
         if (arguments.length == 2) {
-            order = (Byte) orderConverter.convert(arguments[1].get());
+            orderArg = (ByteWritable) orderConverter.convert(arguments[1].get());
 
-            if (order == null) {
+            if (orderArg == null) {
                 return null;
             } else {
-                return ADQLGeometry.fromBlob(blob, inputOI).toRegion(order.byteValue()).serialize();
+                return ADQLGeometry.fromBlob(blob, inputOI).toRegion(orderArg.get()).serialize();
             }
         } else {
             return ADQLGeometry.fromBlob(blob, inputOI).toRegion().serialize();

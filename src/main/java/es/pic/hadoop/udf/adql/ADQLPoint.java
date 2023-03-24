@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 
 import healpix.essentials.HealpixBase;
 import healpix.essentials.HealpixProc;
@@ -12,20 +13,24 @@ import healpix.essentials.Pointing;
 public class ADQLPoint extends ADQLGeometry {
 
     public ADQLPoint(double ra, double dec) {
-        this(Arrays.asList(new Double[] {
-                new Double(ra), new Double(dec),
+        this(new DoubleWritable(ra), new DoubleWritable(dec));
+    }
+
+    public ADQLPoint(DoubleWritable ra, DoubleWritable dec) {
+        this(Arrays.asList(new DoubleWritable[] {
+                ra, dec
         }));
     }
 
-    protected ADQLPoint(List<Double> coords) {
+    protected ADQLPoint(List<DoubleWritable> coords) {
         super(ADQLGeometry.Kind.POINT, coords, null);
     }
 
-    public double getRa() {
+    public DoubleWritable getRa() {
         return getCoord(0);
     }
 
-    public double getDec() {
+    public DoubleWritable getDec() {
         return getCoord(1);
     }
 
@@ -49,8 +54,8 @@ public class ADQLPoint extends ADQLGeometry {
     }
 
     public ADQLRegion toRegion(byte order) throws HiveException {
-        double theta = Math.toRadians(90 - this.getDec());
-        double phi = Math.toRadians(this.getRa());
+        double theta = Math.toRadians(90 - this.getDec().get());
+        double phi = Math.toRadians(this.getRa().get());
 
         Pointing pt = new Pointing(theta, phi);
 

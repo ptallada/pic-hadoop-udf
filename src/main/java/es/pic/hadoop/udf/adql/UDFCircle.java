@@ -7,6 +7,7 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.DoubleWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
@@ -26,7 +27,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 )
 // @formatter:on
 public class UDFCircle extends GenericUDF {
-    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.javaDoubleObjectInspector;
+    final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
     StructObjectInspector inputOI;
 
@@ -34,9 +35,9 @@ public class UDFCircle extends GenericUDF {
     Converter decConverter;
     Converter radiusConverter;
 
-    Double raArg;
-    Double decArg;
-    Double radiusArg;
+    DoubleWritable raArg;
+    DoubleWritable decArg;
+    DoubleWritable radiusArg;
 
     Object blob;
     ADQLGeometry geom;
@@ -85,11 +86,11 @@ public class UDFCircle extends GenericUDF {
 
             raArg = point.getRa();
             decArg = point.getDec();
-            radiusArg = (Double) radiusConverter.convert(arguments[1].get());
+            radiusArg = (DoubleWritable) radiusConverter.convert(arguments[1].get());
         } else {
-            raArg = (Double) raConverter.convert(arguments[0].get());
-            decArg = (Double) decConverter.convert(arguments[1].get());
-            radiusArg = (Double) radiusConverter.convert(arguments[2].get());
+            raArg = (DoubleWritable) raConverter.convert(arguments[0].get());
+            decArg = (DoubleWritable) decConverter.convert(arguments[1].get());
+            radiusArg = (DoubleWritable) radiusConverter.convert(arguments[2].get());
         }
 
         if (raArg == null || decArg == null || radiusArg == null) {
