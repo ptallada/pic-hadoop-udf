@@ -39,6 +39,8 @@ public class UDFContains extends GenericUDF {
     StructObjectInspector inputOI1;
     StructObjectInspector inputOI2;
 
+    Object prev1;
+    Object prev2;
     Object blob1;
     Object blob2;
     ADQLGeometry geom1;
@@ -87,7 +89,12 @@ public class UDFContains extends GenericUDF {
         }
 
         geom1 = ADQLGeometry.fromBlob(blob1, inputOI1);
-        geom2 = ADQLGeometry.fromBlob(blob2, inputOI2);
+        if (!blob2.equals(prev2)) {
+            geom2 = ADQLGeometry.fromBlob(blob2, inputOI2);
+        }
+
+        prev1 = blob1;
+        prev2 = blob2;
 
         if (geom2 instanceof ADQLPoint) {
             throw new UDFArgumentTypeException(1, "Second geometry cannot be a POINT.");
