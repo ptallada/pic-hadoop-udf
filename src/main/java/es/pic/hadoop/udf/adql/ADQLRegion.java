@@ -34,8 +34,7 @@ public class ADQLRegion extends ADQLGeometry {
 
     @Override
     public ADQLRegion toRegion(byte order) {
-        // TODO: maybe use degradedToOrder(int order, boolean keepPartialCells)
-        return this;
+        return new ADQLRegion(getRangeSet().degradedToOrder(order));
     }
 
     public boolean contains(ADQLRegion other) {

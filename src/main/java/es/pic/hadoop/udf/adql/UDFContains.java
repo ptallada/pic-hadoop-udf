@@ -90,6 +90,7 @@ public class UDFContains extends GenericUDF {
 
         geom1 = ADQLGeometry.fromBlob(blob1, inputOI1);
         if (!blob2.equals(prev2)) {
+            // TODO: Maybe do a special case for point-in-region where we do not parse the entire LongBuffer, and do a binary-search within.
             geom2 = ADQLGeometry.fromBlob(blob2, inputOI2);
         }
 

@@ -629,4 +629,23 @@ public class ADQLRangeSet {
         int shift = 2 * (maxorder - order);
         this.add(p1 << shift, p2 << shift);
     }
+
+    public ADQLRangeSet degradedToOrder(int order) {
+        return degradedToOrder(order, true);
+    }
+
+    public ADQLRangeSet degradedToOrder(int order, boolean keepPartialCells) {
+        int shift = 2 * (maxorder - order);
+        long ofs = (1L << shift) - 1;
+        long mask = ~ofs;
+        long adda = keepPartialCells ? 0L : ofs, addb = keepPartialCells ? ofs : 0L;
+        ADQLRangeSet rs2 = new ADQLRangeSet();
+        for (int i = 0; i < nranges(); ++i) {
+            long a = (ivbegin(i) + adda) & mask;
+            long b = (ivend(i) + addb) & mask;
+            if (b > a)
+                rs2.append(a, b);
+        }
+        return rs2;
+    }
 }

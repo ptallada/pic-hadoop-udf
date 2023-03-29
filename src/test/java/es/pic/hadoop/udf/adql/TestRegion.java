@@ -197,7 +197,7 @@ public class TestRegion {
         assertNull(geom.getNumCoords());
         cksum.reset();
         cksum.update(geom.getRangeSet().getRangesAsBytes());
-        assertEquals(12845157L, cksum.getValue());
+        assertEquals(8388625L, cksum.getValue());
     }
 
     @Test
