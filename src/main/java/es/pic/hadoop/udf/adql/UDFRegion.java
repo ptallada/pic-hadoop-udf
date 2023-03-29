@@ -7,12 +7,13 @@ import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
+import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.io.ByteWritable;
 
 // @formatter:off
 @Description(
@@ -26,15 +27,15 @@ import org.apache.hadoop.hive.serde2.io.ByteWritable;
 )
 // @formatter:on
 public class UDFRegion extends GenericUDF {
-    Converter orderConverter;
 
     final static ObjectInspector byteOI = PrimitiveObjectInspectorFactory.writableByteObjectInspector;
 
-    Object geom;
-    ADQLGeometry.Kind kind;
+    StructObjectInspector inputOI;
 
+    Converter orderConverter;
+
+    Object blob;
     ByteWritable orderArg;
-    Byte order;
 
     @Override
     public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
@@ -45,12 +46,10 @@ public class UDFRegion extends GenericUDF {
         if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
             throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
         }
+        inputOI = (StructObjectInspector) arguments[0];
 
         if (arguments.length == 2) {
             orderConverter = ObjectInspectorConverters.getConverter(arguments[1], byteOI);
-        } else {
-            // Set NSIDE=1024 as default value
-            order = null;
         }
 
         return ADQLGeometry.OI;
@@ -58,9 +57,9 @@ public class UDFRegion extends GenericUDF {
 
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
-        geom = arguments[0].get();
+        blob = arguments[0].get();
 
-        if (geom == null) {
+        if (blob == null) {
             return null;
         }
 
@@ -70,11 +69,10 @@ public class UDFRegion extends GenericUDF {
             if (orderArg == null) {
                 return null;
             } else {
-                order = orderArg.get();
-                return ADQLGeometry.fromBlob(geom).toRegion(order.byteValue()).serialize();
+                return ADQLGeometry.fromBlob(blob, inputOI).toRegion(orderArg.get()).serialize();
             }
         } else {
-            return ADQLGeometry.fromBlob(geom).toRegion().serialize();
+            return ADQLGeometry.fromBlob(blob, inputOI).toRegion().serialize();
         }
     }
 

@@ -16,8 +16,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import healpix.essentials.Moc;
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCentroid {
 
@@ -28,14 +26,14 @@ public class TestCentroid {
     Object polygon;
     Object region;
 
-    public TestCentroid() throws HiveException {
+    public TestCentroid() {
         point = new ADQLPoint(10, 20).serialize();
         circle = new ADQLCircle(10, 20, 30).serialize();
         polygon = new ADQLPolygon(10, 10, 20, 10, 20, 20, 10, 20).serialize();
 
-        Moc moc = new Moc();
-        moc.addPixelRange(3, 23, 34);
-        region = new ADQLRegion(moc).serialize();
+        ADQLRangeSet rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 23, 34);
+        region = new ADQLRegion(rs).serialize();
     }
 
     @Test
@@ -45,10 +43,10 @@ public class TestCentroid {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -56,7 +54,7 @@ public class TestCentroid {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
         };
@@ -85,9 +83,9 @@ public class TestCentroid {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertNull(udf.evaluate(new DeferredJavaObject[] {
+        assertEquals("[0, [10.0, 20.0], null]", udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point),
-        }));
+        }).toString());
     }
 
     @Test

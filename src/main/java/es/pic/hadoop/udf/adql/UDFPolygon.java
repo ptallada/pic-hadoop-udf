@@ -38,9 +38,8 @@ public class UDFPolygon extends GenericUDF {
     boolean has_coords = false;
 
     DoubleWritable coordArg;
-    Object geom;
-    ADQLGeometry.Kind kind;
-
+    Object blob;
+    ADQLGeometry geom;
     Object polygon;
 
     @Override
@@ -52,8 +51,9 @@ public class UDFPolygon extends GenericUDF {
             for (int i = 0; i < arguments.length; i++) {
                 oi = arguments[i];
 
-                if (ObjectInspectorUtils.compareTypes(oi, ADQLGeometry.OI)) {
+                if (ObjectInspectorUtils.compareTypes(arguments[i], ADQLGeometry.OI)) {
                     has_points = true;
+                    coordConverters.add(ObjectInspectorConverters.getConverter(oi, ADQLGeometry.OI));
                 } else {
                     has_coords = true;
                     coordConverters.add(ObjectInspectorConverters.getConverter(oi, doubleOI));
@@ -97,23 +97,23 @@ public class UDFPolygon extends GenericUDF {
             }
         } else {
             for (int i = 0; i < arguments.length; i++) {
-                geom = arguments[i].get();
+                blob = arguments[i].get();
 
-                if (geom == null) {
+                if (blob == null) {
                     return null;
                 }
 
-                kind = ADQLGeometry.getTag(geom);
+                geom = ADQLGeometry.fromBlob(coordConverters.get(i).convert(blob), ADQLGeometry.OI);
 
-                if (kind != ADQLGeometry.Kind.POINT) {
+                if (!(geom instanceof ADQLPoint)) {
                     throw new UDFArgumentTypeException(i,
-                            String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
+                            String.format("Provided geometry is not a POINT, but a %s.", geom.getKind().name()));
                 }
 
-                List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
+                ADQLPoint point = (ADQLPoint) geom;
 
-                coordArgs.add(coords.get(0));
-                coordArgs.add(coords.get(1));
+                coordArgs.add(point.getRa());
+                coordArgs.add(point.getDec());
             }
         }
 

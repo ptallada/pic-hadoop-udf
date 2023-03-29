@@ -37,12 +37,12 @@ public class TestCircle {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -50,7 +50,7 @@ public class TestCircle {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,

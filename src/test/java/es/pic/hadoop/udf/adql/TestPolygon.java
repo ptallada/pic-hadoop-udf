@@ -26,15 +26,16 @@ public class TestPolygon {
 
     List<DoubleWritable> coords;
     List<Object> points = new ArrayList<Object>();
-    
+
     Object circle;
 
     public TestPolygon() {
         circle = new ADQLCircle(11, 22, 33).serialize();
 
         coords = Arrays.asList(new DoubleWritable[] {
-                new DoubleWritable(10), new DoubleWritable(20), new DoubleWritable(30), new DoubleWritable(40),
-                new DoubleWritable(50), new DoubleWritable(60), new DoubleWritable(70), new DoubleWritable(80),
+                new DoubleWritable(10.0), new DoubleWritable(20.0), new DoubleWritable(30.0), new DoubleWritable(40.0),
+                new DoubleWritable(50.0), new DoubleWritable(60.0), new DoubleWritable(70.0), new DoubleWritable(80.0),
+                new DoubleWritable(90.0)
         });
 
         points.add(new ADQLPoint(coords.subList(0, 2)).serialize());
@@ -50,11 +51,11 @@ public class TestPolygon {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -63,7 +64,7 @@ public class TestPolygon {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,
                 PrimitiveObjectInspectorFactory.writableDoubleObjectInspector,

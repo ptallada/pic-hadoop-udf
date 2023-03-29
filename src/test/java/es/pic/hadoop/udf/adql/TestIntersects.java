@@ -16,8 +16,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import healpix.essentials.Moc;
-
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestIntersects {
 
@@ -25,6 +23,7 @@ public class TestIntersects {
 
     ObjectInspector outputOI = PrimitiveObjectInspectorFactory.writableBooleanObjectInspector;
 
+    ADQLRangeSet rs;
     Object point1;
     Object point2;
     Object point3;
@@ -38,7 +37,7 @@ public class TestIntersects {
     Object region2;
     Object region3;
 
-    public TestIntersects() throws HiveException {
+    public TestIntersects() {
         point1 = new ADQLPoint(-4, 0).serialize();
         point2 = new ADQLPoint(0, 0).serialize();
         point3 = new ADQLPoint(6, 0).serialize();
@@ -51,17 +50,17 @@ public class TestIntersects {
         polygon2 = new ADQLPolygon(-1, -1, 1, -1, 1, 1, -1, 1).serialize();
         polygon3 = new ADQLPolygon(-1, 2, 1, 2, 1, 4, -1, 4).serialize();
 
-        Moc moc = new Moc();
-        moc.addPixelRange(3, 20, 30);
-        region1 = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 20, 30);
+        region1 = new ADQLRegion(rs).serialize();
 
-        moc = new Moc();
-        moc.addPixelRange(3, 40, 50);
-        region2 = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 40, 50);
+        region2 = new ADQLRegion(rs).serialize();
 
-        moc = new Moc();
-        moc.addPixelRange(3, 35, 300);
-        region3 = new ADQLRegion(moc).serialize();
+        rs = new ADQLRangeSet();
+        rs.addPixelRange(3, 35, 300);
+        region3 = new ADQLRegion(rs).serialize();
     }
 
     @Test
@@ -71,11 +70,11 @@ public class TestIntersects {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -84,10 +83,10 @@ public class TestIntersects {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector, ADQLGeometry.OI,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector, ADQLGeometry.OI,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 2)));

@@ -38,10 +38,10 @@ public class TestCoord1 {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -49,9 +49,9 @@ public class TestCoord1 {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(params));

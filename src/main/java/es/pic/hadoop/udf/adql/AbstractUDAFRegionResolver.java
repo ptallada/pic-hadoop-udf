@@ -12,8 +12,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfo;
 
-import healpix.essentials.Moc;
-
 @SuppressWarnings("deprecation")
 public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFResolver {
 
@@ -39,7 +37,8 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
         AbstractUDAFRegionEvaluator eval = (AbstractUDAFRegionEvaluator) getEvaluator(parameters);
 
         eval.setIsAllColumns(info.isAllColumns());
-        eval.setWindowing(info.isWindowing());
+        // FIXME: Commented below because do not work in Spark
+        // eval.setWindowing(info.isWindowing());
         eval.setIsDistinct(info.isDistinct());
 
         return eval;
@@ -48,7 +47,7 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
     public abstract static class AbstractUDAFRegionEvaluator extends GenericUDAFEvaluator {
 
         class RegionAggregationBuffer extends AbstractAggregationBuffer {
-            Moc moc = null;
+            ADQLRangeSet rs = null;
         }
 
         protected StructObjectInspector inputOI;
@@ -87,16 +86,16 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
         }
 
         @Override
-        public AbstractAggregationBuffer getNewAggregationBuffer() throws HiveException {
+        public AbstractAggregationBuffer getNewAggregationBuffer() {
             return new RegionAggregationBuffer();
         }
 
         @Override
-        public void reset(AggregationBuffer agg) throws HiveException {
-            ((RegionAggregationBuffer) agg).moc = null;
+        public void reset(AggregationBuffer agg) {
+            ((RegionAggregationBuffer) agg).rs = null;
         }
 
-        protected abstract void doMerge(RegionAggregationBuffer buff, ADQLRegion region) throws HiveException;
+        protected abstract void doMerge(RegionAggregationBuffer buff, ADQLRegion region);
 
         @Override
         public void iterate(AggregationBuffer buff, Object[] parameters) throws HiveException {
@@ -110,19 +109,19 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
             }
 
             RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
-            ADQLRegion region = ADQLRegion.fromBlob(parameters[0], inputOI);
+            ADQLRegion region = (ADQLRegion) ADQLGeometry.fromBlob(parameters[0], inputOI);
 
             doMerge(agg, region);
         }
 
         @Override
-        public void merge(AggregationBuffer buff, Object partial) throws HiveException {
+        public void merge(AggregationBuffer buff, Object partial) {
             if (partial == null) {
                 return;
             }
 
             RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
-            ADQLRegion region = ADQLRegion.fromBlob(partial, inputOI);
+            ADQLRegion region = (ADQLRegion) ADQLGeometry.fromBlob(partial, inputOI);
 
             doMerge(agg, region);
         }
@@ -131,7 +130,7 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
         public Object terminatePartial(AggregationBuffer buff) throws HiveException {
             RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
 
-            if (agg.moc == null) {
+            if (agg.rs == null) {
                 return null;
             } else {
                 return terminate(buff);
@@ -142,10 +141,10 @@ public abstract class AbstractUDAFRegionResolver extends AbstractGenericUDAFReso
         public Object terminate(AggregationBuffer buff) throws HiveException {
             RegionAggregationBuffer agg = (RegionAggregationBuffer) buff;
 
-            if (agg.moc == null) {
-                return new ADQLRegion(new Moc()).serialize();
+            if (agg.rs == null) {
+                return new ADQLRegion(new ADQLRangeSet()).serialize();
             } else {
-                return new ADQLRegion(agg.moc).serialize();
+                return new ADQLRegion(agg.rs).serialize();
             }
         }
     }

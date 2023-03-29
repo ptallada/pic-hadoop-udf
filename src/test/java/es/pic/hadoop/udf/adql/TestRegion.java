@@ -6,18 +6,17 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
+import java.util.zip.Adler32;
 
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentTypeException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF.DeferredJavaObject;
+import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
-import org.apache.hadoop.hive.serde2.io.ByteWritable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
-
-import healpix.essentials.Moc;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestRegion {
@@ -33,6 +32,9 @@ public class TestRegion {
     Object invalid_circle;
     Object invalid_polygon;
 
+    ADQLGeometry geom;
+    Adler32 cksum = new Adler32();
+
     public TestRegion() throws HiveException {
         point = new ADQLPoint(0, 0).serialize();
         circle = new ADQLCircle(1, 1, 1).serialize();
@@ -42,9 +44,9 @@ public class TestRegion {
         invalid_circle = new ADQLCircle(0, 200, 400).serialize();
         invalid_polygon = new ADQLPolygon(-8, -3, 2, -3, 3, 3, -8).serialize();
 
-        Moc moc = new Moc();
-        moc.addPixelRange(3, 23, 34);
-        region = new ADQLRegion(moc).serialize();
+        ADQLRangeSet rs = new ADQLRangeSet();
+        rs.addPixelRange(29, 10, 90);
+        region = new ADQLRegion(rs).serialize();
     }
 
     @Test
@@ -54,11 +56,11 @@ public class TestRegion {
     }
 
     @Test
-    void wrongNumberOfArguments() throws HiveException {
+    void wrongNumberOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentLengthException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 0)));
@@ -66,9 +68,9 @@ public class TestRegion {
     }
 
     @Test
-    void wrongTypeOfArguments() throws HiveException {
+    void wrongTypeOfArguments() {
         ObjectInspector[] params = new ObjectInspector[] {
-                PrimitiveObjectInspectorFactory.writableVoidObjectInspector,
+                PrimitiveObjectInspectorFactory.javaVoidObjectInspector,
         };
 
         assertThrows(UDFArgumentTypeException.class, () -> udf.initialize(Arrays.copyOfRange(params, 0, 1)));
@@ -108,18 +110,45 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(357800518, udf.evaluate(new DeferredJavaObject[] {
+        // POINT
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point)
-        }).hashCode());
-        assertEquals(1507459696, udf.evaluate(new DeferredJavaObject[] {
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(30998568L, cksum.getValue());
+
+        // CIRCLE
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle)
-        }).hashCode());
-        assertEquals(1137480229, udf.evaluate(new DeferredJavaObject[] {
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(3713698213L, cksum.getValue());
+
+        // POLYGON
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon)
-        }).hashCode());
-        assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(271681799L, cksum.getValue());
+
+        // REGION
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region)
-        }).hashCode());
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(12845157L, cksum.getValue());
     }
 
     @Test
@@ -130,18 +159,45 @@ public class TestRegion {
 
         assertEquals(udf.initialize(params), ADQLGeometry.OI);
 
-        assertEquals(1193325843, udf.evaluate(new DeferredJavaObject[] {
+        // POINT
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(point), new DeferredJavaObject(new ByteWritable((byte) 3))
-        }).hashCode());
-        assertEquals(-1996283600, udf.evaluate(new DeferredJavaObject[] {
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(38273079L, cksum.getValue());
+
+        // CIRCLE
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(circle), new DeferredJavaObject(new ByteWritable((byte) 3))
-        }).hashCode());
-        assertEquals(-1108620869, udf.evaluate(new DeferredJavaObject[] {
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(2575827854L, cksum.getValue());
+
+        // POLYGON
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(polygon), new DeferredJavaObject(new ByteWritable((byte) 3))
-        }).hashCode());
-        assertEquals(35764324, udf.evaluate(new DeferredJavaObject[] {
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(3910665362L, cksum.getValue());
+
+        // REGION
+        geom = ADQLGeometry.fromBlob(udf.evaluate(new DeferredJavaObject[] {
                 new DeferredJavaObject(region), new DeferredJavaObject(new ByteWritable((byte) 3))
-        }).hashCode());
+        }), ADQLGeometry.OI);
+        assertEquals(ADQLGeometry.Kind.REGION, geom.getKind());
+        assertNull(geom.getNumCoords());
+        cksum.reset();
+        cksum.update(geom.getRangeSet().getRangesAsBytes());
+        assertEquals(8388625L, cksum.getValue());
     }
 
     @Test

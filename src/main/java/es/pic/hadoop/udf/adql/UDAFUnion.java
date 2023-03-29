@@ -1,9 +1,6 @@
 package es.pic.hadoop.udf.adql;
 
-import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDAFEvaluator;
-
-import healpix.essentials.Moc;
 
 public class UDAFUnion extends AbstractUDAFRegionResolver {
 
@@ -14,11 +11,11 @@ public class UDAFUnion extends AbstractUDAFRegionResolver {
     public static class UDAFRegionUnionEvaluator extends AbstractUDAFRegionEvaluator {
 
         @Override
-        public void doMerge(RegionAggregationBuffer agg, ADQLRegion region) throws HiveException {
-            if (agg.moc == null) {
-                agg.moc = new Moc(region.moc);
+        public void doMerge(RegionAggregationBuffer agg, ADQLRegion region) {
+            if (agg.rs == null) {
+                agg.rs = new ADQLRangeSet(region.getRangeSet());
             } else {
-                agg.moc = agg.moc.union(region.moc);
+                agg.rs = agg.rs.union(region.getRangeSet());
             }            
         }
     }

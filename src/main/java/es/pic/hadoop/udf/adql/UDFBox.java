@@ -3,9 +3,6 @@ package es.pic.hadoop.udf.adql;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.geometry.S2LatLng;
-import com.google.common.geometry.S2LatLngRect;
-
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentLengthException;
@@ -18,7 +15,11 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorConverters.Converter;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspectorUtils;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
+
+import com.google.common.geometry.S2LatLng;
+import com.google.common.geometry.S2LatLngRect;
 
 // @formatter:off
 @Description(
@@ -34,6 +35,8 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectIn
 public class UDFBox extends GenericUDF {
     final static ObjectInspector doubleOI = PrimitiveObjectInspectorFactory.writableDoubleObjectInspector;
 
+    StructObjectInspector inputOI;
+
     Converter raConverter;
     Converter decConverter;
     Converter widthConverter;
@@ -43,14 +46,8 @@ public class UDFBox extends GenericUDF {
     DoubleWritable decArg;
     DoubleWritable widthArg;
     DoubleWritable heightArg;
-
-    double ra;
-    double dec;
-    double width;
-    double height;
-
-    Object geom;
-    ADQLGeometry.Kind kind;
+    Object blob;
+    ADQLGeometry geom;
 
     S2LatLng center;
     S2LatLng size;
@@ -64,6 +61,7 @@ public class UDFBox extends GenericUDF {
             if (!ObjectInspectorUtils.compareTypes(arguments[0], ADQLGeometry.OI)) {
                 throw new UDFArgumentTypeException(0, "First argument has to be of ADQL geometry type.");
             }
+            inputOI = (StructObjectInspector) arguments[0];
 
             widthConverter = ObjectInspectorConverters.getConverter(arguments[1], doubleOI);
             heightConverter = ObjectInspectorConverters.getConverter(arguments[2], doubleOI);
@@ -85,23 +83,23 @@ public class UDFBox extends GenericUDF {
     @Override
     public Object evaluate(DeferredObject[] arguments) throws HiveException {
         if (arguments.length == 3) {
-            geom = arguments[0].get();
+            blob = arguments[0].get();
 
-            if (geom == null) {
+            if (blob == null) {
                 return null;
             }
 
-            kind = ADQLGeometry.getTag(geom);
+            geom = ADQLGeometry.fromBlob(blob, inputOI);
 
-            if (kind != ADQLGeometry.Kind.POINT) {
+            if (!(geom instanceof ADQLPoint)) {
                 throw new UDFArgumentTypeException(0,
-                        String.format("Provided geometry is not a POINT, but a %s.", kind.name()));
+                        String.format("Provided geometry is not a POINT, but a %s.", geom.getKind().name()));
             }
 
-            List<DoubleWritable> coords = ADQLGeometry.getCoords(geom);
+            ADQLPoint point = (ADQLPoint) geom;
 
-            raArg = coords.get(0);
-            decArg = coords.get(1);
+            raArg = point.getRa();
+            decArg = point.getDec();
 
             widthArg = (DoubleWritable) widthConverter.convert(arguments[1].get());
             heightArg = (DoubleWritable) heightConverter.convert(arguments[2].get());
@@ -117,13 +115,8 @@ public class UDFBox extends GenericUDF {
             return null;
         }
 
-        ra = raArg.get();
-        dec = decArg.get();
-        width = widthArg.get();
-        height = heightArg.get();
-
-        center = S2LatLng.fromDegrees(dec, ra);
-        size = S2LatLng.fromDegrees(height, width);
+        center = S2LatLng.fromDegrees(decArg.get(), raArg.get());
+        size = S2LatLng.fromDegrees(heightArg.get(), widthArg.get());
         box = S2LatLngRect.fromCenterSize(center, size);
 
         coords = new ArrayList<DoubleWritable>();
