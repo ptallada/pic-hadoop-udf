@@ -14,7 +14,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 // @formatter:off
 @Description(
     name = "complement",
-    value = "_FUNC_(region:ADQLRegion) -> region:ADQLRegion",
+    value = "_FUNC_(geom:ADQLGeometry) -> geom:ADQLGeometry",
     extended = "Return the complement of an ADQL region."
 )
 @UDFType(
