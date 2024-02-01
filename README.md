@@ -1,4 +1,11 @@
+
 # Apache Hive UDFs
+This is a set of Hive UDFs developed to complement [CosmoHub](https://cosmohub.pic.es)'s features. All of them have a corresponding test suite. It consists, on the following sets:
+
+*  **HEALPix**, wrapped around the Java HEALPix library, offer most of the functionality available. They mimic the same calling signature as the Python [healpy](https://healpy.readthedocs.io/) library, with the difference that they take a `resolution order` argument where needed, instead of the `nside`.
+*  **`atan2`**, much needed for some trigonometrical methods.
+* **Array aggregation**  functions that operate on arrays with homogeneous cardinality. Useful for computing average spectras and combining probability distribution functions.
+* **Spherical geometric** functions, based on the [s2-geometry](http://s2geometry.io/) library, that are intented to be the base for an [ADQL](https://www.ivoa.net/documents/latest/ADQL.html) implementation over Apache Hive.
 
 ## Instructions to build
 ```
@@ -21,7 +28,6 @@ DROP FUNCTION IF EXISTS hp_npix2nside;
 DROP FUNCTION IF EXISTS hp_nside2order;
 DROP FUNCTION IF EXISTS hp_order2npix;
 DROP FUNCTION IF EXISTS hp_maxpixrad;
-
 CREATE FUNCTION hp_ang2pix AS 'es.pic.hadoop.udf.healpix.UDFAng2Pix';
 CREATE FUNCTION hp_ang2vec AS 'es.pic.hadoop.udf.healpix.UDFAng2Vec';
 CREATE FUNCTION hp_pix2ang AS 'es.pic.hadoop.udf.healpix.UDFPix2Ang';
@@ -41,7 +47,6 @@ CREATE FUNCTION hp_maxpixrad AS 'es.pic.hadoop.udf.healpix.UDFMaxPixRad';
 ## Math
 ```
 DROP FUNCTION IF EXISTS atan2;
-
 CREATE FUNCTION atan2 AS 'es.pic.hadoop.udf.math.UDFAtan2';
 ```
 
@@ -57,7 +62,6 @@ DROP FUNCTION IF EXISTS array_stddev_samp;
 DROP FUNCTION IF EXISTS array_variance;
 DROP FUNCTION IF EXISTS array_var_pop;
 DROP FUNCTION IF EXISTS array_var_samp;
-
 CREATE FUNCTION array_min AS 'es.pic.hadoop.udf.array.UDAFArrayMin';
 CREATE FUNCTION array_max AS 'es.pic.hadoop.udf.array.UDAFArrayMax';
 CREATE FUNCTION array_sum AS 'es.pic.hadoop.udf.array.UDAFArraySum';
@@ -87,7 +91,6 @@ DROP FUNCTION IF EXISTS adql_point;
 DROP FUNCTION IF EXISTS adql_polygon;
 DROP FUNCTION IF EXISTS adql_region;
 DROP FUNCTION IF EXISTS adql_union;
-
 CREATE FUNCTION adql_area AS 'es.pic.hadoop.udf.adql.UDFArea';
 CREATE FUNCTION adql_box AS 'es.pic.hadoop.udf.adql.UDFBox';
 CREATE FUNCTION adql_centroid AS 'es.pic.hadoop.udf.adql.UDFCentroid';
@@ -104,3 +107,25 @@ CREATE FUNCTION adql_polygon AS 'es.pic.hadoop.udf.adql.UDFPolygon';
 CREATE FUNCTION adql_region AS 'es.pic.hadoop.udf.adql.UDFRegion';
 CREATE FUNCTION adql_union AS 'es.pic.hadoop.udf.adql.UDAFUnion';
 ```
+
+## Authors
+
+* Pau Tallada Crespí <tallada@pic.es>
+* Pau Carreño Garcia <pau.carrenog@gmail.com>
+
+## License
+
+    Copyright (C) 2016-2024, Pau Tallada Crespí
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
