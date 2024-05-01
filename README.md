@@ -47,7 +47,9 @@ CREATE FUNCTION hp_maxpixrad AS 'es.pic.hadoop.udf.healpix.UDFMaxPixRad';
 ## Math
 ```
 DROP FUNCTION IF EXISTS atan2;
+DROP FUNCTION IF EXISTS erfc;
 CREATE FUNCTION atan2 AS 'es.pic.hadoop.udf.math.UDFAtan2';
+CREATE FUNCTION erfc AS 'es.pic.hadoop.udf.math.UDFErfc';
 ```
 
 ## Arrays
