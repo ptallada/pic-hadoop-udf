@@ -79,19 +79,19 @@
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-client</artifactId>
-      <version>3.1.1</version>
+      <version>3.2.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
       <artifactId>hive-exec</artifactId>
-      <version>3.1.0</version>
+      <version>3.1.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>healpix</groupId>
-      <artifactId>healpix_nofits</artifactId>
-      <version>3.81</version>
+      <groupId>jhealpix</groupId>
+      <artifactId>jhealpix_nofits</artifactId>
+      <version>3.83</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -120,14 +120,6 @@
   </dependencies>
 
   <repositories>
-    <!--<repository>
-      <id>hdp-releases</id>
-      <url>https://repo.hortonworks.com/content/repositories/releases/</url>
-    </repository>
-    <repository>
-      <id>hdp-public</id>
-      <url>https://repo.hortonworks.com/content/groups/public/</url>
-    </repository>-->
     <repository>
       <id>maven</id>
       <url>https://repo1.maven.org/maven2/</url>
