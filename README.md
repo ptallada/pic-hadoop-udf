@@ -110,6 +110,11 @@ CREATE FUNCTION adql_region AS 'es.pic.hadoop.udf.adql.UDFRegion';
 CREATE FUNCTION adql_union AS 'es.pic.hadoop.udf.adql.UDAFUnion';
 ```
 
+## Multi-order coverage map
+DROP FUNCTION IF EXISTS map_tofootprint;
+CREATE FUNCTION map_tofootprint AS 'es.pic.hadoop.udf.map.UDFMap2Footprint';
+
+
 ## Authors
 
 * Pau Tallada Crespí <tallada@pic.es>
